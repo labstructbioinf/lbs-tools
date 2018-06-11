@@ -88,12 +88,11 @@ def parse_socket_output(filename, entry, method = 'cc'):
                     hept_start = 0
                     hept_end = 0
                     for z in range(0, len(hept)):
-                        if hept[z] != ' ':
+                        if hept[z] != ' ' and hept[z] != '\n':
                             if not st:
                                 st = True
                                 hept_start = z
                             hept_end = z
-                    #print(partner_start, partner_end, hept_start, hept_end, seq2[partner_start:partner_end])
                     fin_start = 0
                     fin_end = 0
                     if partner_start >= hept_start:
@@ -102,17 +101,11 @@ def parse_socket_output(filename, entry, method = 'cc'):
                         fin_start = partner_start
             
                     if partner_end >= hept_end:
-                        fin_end = hept_end
-                    else:
                         fin_end = partner_end
-                        
-                    #print(seq2[fin_start:fin_end])
+                    else:
+                        fin_end = hept_end
                     coil_info['sequences'].append(seq2[fin_start:fin_end+1])
                     fin_hept = ['-'for y in range(0, len(hept))]
-                    #print(fin_hept)
-                    #for y in range(hept_start, hept_end):
-                        #fin_hept[y] = hept[y]
-                    #fin_hept[hept_start:hept_end] = hept
                     coil_info['heptads'].append(''.join(fin_hept))
             if line.startswith('	angle between helices'):
                 rel_data = line.split()
