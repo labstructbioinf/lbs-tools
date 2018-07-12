@@ -37,8 +37,6 @@ def parse_socket_output(filename, entry, method = 'cc'):
         coil_info['sequences'] = []
         coil_info['heptads'] = []
         coil_info['orientation'] = []
-        
-        # Iterate over output lines in one coil assignment
         for k in range(start, stop):
             line = lines[k].rstrip()
             if entry in line and 'PRESENT' not in line and 'REPEATS' not in line:
@@ -56,7 +54,6 @@ def parse_socket_output(filename, entry, method = 'cc'):
                 line_prev = lines[k-1].rstrip()
                 data_prev = line_prev.split(' ')
                 helix_id = data_prev[4]
-                coil_info['indices'].append((helix_id, start_res, end_res, chain))
             if line.startswith('sequence'):
                 seq2 = line[9:]
                 hept = lines[k+1][9:]
@@ -73,6 +70,7 @@ def parse_socket_output(filename, entry, method = 'cc'):
                     assert len(seq2) == len(hept)
                     coil_info['heptads'].append(hept)
                     coil_info['sequences'].append(seq2)
+                    coil_info['indices'].append((helix_id, int(start_res), int(end_res), chain))
                 elif method == 'kih':
                     st = False
                     partner_start = 0
@@ -99,14 +97,19 @@ def parse_socket_output(filename, entry, method = 'cc'):
                         fin_start = hept_start
                     else:
                         fin_start = partner_start
-            
+                        offset = partner_start - hept_start
+                        print(partner_start, hept_start)
+                        start_res = int(start_res) + offset
                     if partner_end >= hept_end:
                         fin_end = partner_end
+                        offset = partner_end - hept_end
+                        end_res = int(end_res) + offset
                     else:
                         fin_end = hept_end
                     coil_info['sequences'].append(seq2[fin_start:fin_end+1])
                     fin_hept = ['-'for y in range(0, len(hept))]
                     coil_info['heptads'].append(''.join(fin_hept))
+                    coil_info['indices'].append((helix_id, int(start_res), int(end_res), chain))
             if line.startswith('	angle between helices'):
                 rel_data = line.split()
                 first_helix, second_helix, orientation = rel_data[3], rel_data[5], rel_data[8]
