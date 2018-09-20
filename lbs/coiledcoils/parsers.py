@@ -1,3 +1,15 @@
+def parse_pcoils_toolkit(fn, window='14'):
+    window2columns = {'14': 3, '21': 5, '28': 7}
+    f = open(fn)
+    data = f.readlines()
+    assignment = []
+    for i in range(4, len(data)):
+        line = data[i].rstrip()
+        results = line.split()
+        if len(results) > 0:
+            assignment.append(float(results[window2columns[window]]))
+    return(assignment)
+
 def parse_marcoil(fn):
     f = open(fn)
     data = f.readlines()
