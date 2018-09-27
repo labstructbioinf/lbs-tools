@@ -22,7 +22,7 @@ def parse_marcoil(fn):
                 line2 = data[j].rstrip()
                 data2 = line2.split()
                 if len(data2) == 4:
-                    probs.append(float(data2[2]))
+                    probs.append(float(data2[2])/100)
                 j += 1
             return(probs)
 
