@@ -97,3 +97,22 @@ def parse_socket_output(filename, method='overlap'):
         return 0
     else:
         return all_coils, relations
+
+
+def check_socket_output(filename):
+    """
+    Checks Socket output to determine whether CC domain is present.
+    Runs faster than parse_socket_output() and returns only boolean output.
+    :param filename: Socket output (short version) filename
+    """
+    try:
+        f = open(filename, 'rb')
+        f.seek(-1024, 2)
+        last = f.readlines()[-2].decode()
+        f.close()
+        if last.endswith('NO COILED COILS\n'):
+            return False
+        else:
+            return True
+    except (TypeError, KeyError, OSError):
+        return False
