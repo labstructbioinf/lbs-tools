@@ -39,9 +39,13 @@ def parse_socket_output(filename, method='overlap'):
                 temp = line.split(' ')
                 # Get start and end residues for helix
                 try:
-                    if temp[6][0] == '-':
-                        start_res = -int(temp[6].split('-')[1])
-                        end_res = int(temp[6].split('-')[2].split(':')[0])
+                    if temp[6][0] == '-': # First residue is negative
+                        if temp[6].count('-') == 3: # Both residues are negative
+                            start_res = -int(temp[6].split('-')[1])
+                            end_res = -int(temp[6].split('-')[3].split(':')[0])
+                        else:
+                            start_res = -int(temp[6].split('-')[1])
+                            end_res = int(temp[6].split('-')[2].split(':')[0])
                     else:
                         start_res = int(temp[6].split('-')[0])
                         end_res = int(temp[6].split('-')[1].split(':')[0])
