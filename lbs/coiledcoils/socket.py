@@ -1,4 +1,5 @@
 import re
+import itertools
 
 
 def parse_socket_output(filename, method='overlap'):
@@ -12,9 +13,12 @@ def parse_socket_output(filename, method='overlap'):
     :return: dict with the parsed coiled coils informations (if present) or 0 (if coiled coils absent)
     """
     # Read all lines from file
-    f = open(filename, 'r')
-    lines = f.readlines()
-    f.close()
+    try:
+        f = open(filename, 'r')
+        lines = f.readlines()
+        f.close()
+    except (OSError, FileNotFoundError):
+        return 0
 
     # Get indices (numbers of first line in file) for each CC assignment
     start_indices = []
@@ -104,15 +108,79 @@ def check_socket_output(filename):
     Checks Socket output to determine whether CC domain is present.
     Runs faster than parse_socket_output() and returns only boolean output.
     :param filename: Socket output (short version) filename
+    :return bool indicating whether CC domain is present or not
     """
     try:
         f = open(filename, 'rb')
         f.seek(-1024, 2)
         last = f.readlines()[-2].decode()
         f.close()
-        if last.endswith('NO COILED COILS\n'):
+        if 'NO COILED COILS' in last:
             return False
         else:
             return True
     except (TypeError, KeyError, OSError):
         return False
+
+
+def __find_index(s, ch, remove_ends=False):
+    ind = [i for i, ltr in enumerate(s) if ltr == ch]
+    if remove_ends:
+        indices = [[match.start(), match.end()] for match in re.finditer('{}+'.format(ch), s)]
+        del_ind = set()
+        for indice in indices:
+            if indice[0] == 0 or indice[1] == len(s):
+                for k in range(indice[0], indice[1] + 1):
+                    del_ind.add(k)
+        ind_corr = [_ind for _ind in ind if _ind not in del_ind]
+        return ind_corr
+    else:
+        return ind
+
+
+def __change_X_seq(indexes, values, seq):
+    seq = list(seq)
+    for index, value in zip(indexes, values):
+        seq[index] = value
+    return ''.join(seq)
+
+
+def map_socket_to_sequence(seq, chain, socket_output, min_length=7, verbose=False):
+    assignment = len(seq)*'0'
+    if type(socket_output) != tuple:
+        return assignment
+    if type(socket_output[0]) != list:
+        return assignment
+    data = socket_output[0]
+    for cc in data:
+        for indice, cc_seq in zip(cc['indices'], cc['sequences']):
+            if indice[3] == chain:
+                matched = False
+                if 'X' in cc_seq:
+                    if not all([aa == 'X' for aa in cc_seq]):
+                        indexes = __find_index(cc_seq, 'X')
+                        for perm in itertools.product('MCKHX', repeat=len(indexes)):
+                            cc_seq2 = __change_X_seq(indexes, perm, cc_seq)
+                            starts = [match.start() for match in re.finditer(re.escape(cc_seq2), seq)]
+                            if starts:
+                                matched = True
+                                if len(cc_seq) >= min_length:
+                                    for start in starts:
+                                        temp_list = list(assignment)
+                                        for i in range(0, len(cc_seq)):
+                                            temp_list[start + i] = '1'
+                                        assignment = ''.join(temp_list)
+                else:
+                    starts = [match.start() for match in re.finditer(re.escape(cc_seq), seq)]
+                    if starts:
+                        matched = True
+                        if len(cc_seq) >= min_length:
+                            for start in starts:
+                                temp_list = list(assignment)
+                                for i in range(0, len(cc_seq)):
+                                    temp_list[start + i] = '1'
+                            assignment = ''.join(temp_list)
+                if not matched:
+                    if verbose:
+                        print(cc_seq, seq, socket_output)
+    return assignment
