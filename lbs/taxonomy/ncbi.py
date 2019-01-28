@@ -43,7 +43,7 @@ class taxdb:
 	
 	def keepgenomes(self, genome_taxids):
 		"""
-		from self.nodes remove species (rank) that are in genome_taxids list
+		from self.nodes remove species (rank) that aren't in genome_taxids list
 		"""
 		
 		self.nodes.drop(self.nodes.index[(self.nodes['rank'] == 'species') & (~self.nodes['taxid'].isin(genome_taxids))], inplace=True)
@@ -56,7 +56,6 @@ class taxdb:
 		children = self.nodes[self.nodes.parent_taxid == taxid].taxid.tolist()
 
 		if len(children)==0:
-			#if self.nodes[self.nodes.taxid==taxid]['rank'].iloc[0] == 'species':
 			yield taxid
 		else:
 			for child in children:
