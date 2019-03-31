@@ -114,18 +114,20 @@ class PDB(object):
             if not os.path.isfile('{}/pdb_biounit/{}/{}.pdb1'.format(self.db_path, index[1:3], index)):
                 print(self.structures.loc[index])
 
-    def __add_col_structures(self, data_dict, added_col_name):
+    def __add_col_structures(self, data, added_col_name):
         cols = list(self.structures.columns)
         cols.append(added_col_name)
-        data_df = pd.DataFrame.from_dict(data_dict, orient='index')
-        self.structures = pd.concat((self.structures, data_df), axis=1, sort=True)
+        if type(data) == dict:
+            data = pd.DataFrame.from_dict(data, orient='index')
+        self.structures = pd.concat((self.structures, data), axis=1, sort=True)
         self.structures.columns = cols
 
-    def __add_col_chains(self, data_dict, added_col_name):
+    def __add_col_chains(self, data, added_col_name):
         cols = list(self.chains.columns)
         cols.append(added_col_name)
-        data_df = pd.DataFrame.from_dict(data_dict, orient='index')
-        self.chains = pd.concat((self.chains, data_df), axis=1, sort=True)
+        if type(data) == dict:
+            data = pd.DataFrame.from_dict(data, orient='index')
+        self.chains = pd.concat((self.chains, data), axis=1, sort=True)
         self.chains.columns = cols
 
     def load_clustering_data(self, identity=50, method='blast'):
