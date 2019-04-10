@@ -28,7 +28,7 @@ class clansseq:
 		self.connections = []
 		
 	def clustername(self):
-		if self.cluster <> None:
+		if self.cluster != None:
 			return self.cluster.name
 		else:
 			return "UNKNOWN"
@@ -154,9 +154,9 @@ class clansrun:
 					ident = makeid(f,t)
 
 					if self.connections.has_key(ident):
-						if self.connections[ident].value <> c.value:
+						if self.connections[ident].value != c.value:
 							#pass					
-							print "error!"
+							print ("error!")
 							sys.exit(-1)
 
 					else:
@@ -180,7 +180,7 @@ class clansrun:
 
 		hits = hitre.findall(runfile.read())
 		if debug:
-			print "clansrun: %s CLANS seqgroup(s) were/was found" % len(hits)
+			print ("clansrun: %s CLANS seqgroup(s) were/was found" % len(hits))
 		
 		
 		if len(hits)>0: 
@@ -190,7 +190,7 @@ class clansrun:
 			
 
 		if debug:
-			print "clansrun:", len(clu), "clusters were read"
+			print ("clansrun:", len(clu), "clusters were read")
 
 			
 		
@@ -229,34 +229,34 @@ class clansrun:
 				if not numb=='':		
 					if dupcontrol.has_key(numb):
 						if warn:
-							print "seq nr %s already in cluster %s, cannot add to culster %s" % (numb, dupcontrol[numb], clustername)
+							print ("seq nr %s already in cluster %s, cannot add to culster %s" % (numb, dupcontrol[numb], clustername))
 						if not onlywarn:
 							sys.exit(-1)
 					else:
 						dupcontrol[numb]=clustername
 
 		if debug:
-			print "clansrun:", len(self.clusters), "final clusters were formed"
+			print ("clansrun:", len(self.clusters), "final clusters were formed")
 	# http://www.macs.hw.ac.uk/~pdw/topology/ScaleFree.html
 	def degree(self):
 		counts = []
 		for s in self.pos2seq.values():
 			c = len(s.connections)
-			assert c <> 0
+			assert c != 0
 			counts.append(c)
 
 		counts, bins = numpy.histogram(counts, range=(1,161), bins=40, normed=False)
 
 		for b, c in zip(bins, counts):
 			#print "%s" % (round(c/float(len(self.seqs.keys())),4))
-			print "%s\t%s" % (b,c)
+			print ("%s\t%s" % (b,c))
 
-	def save(self):
-		print self.header
-		print "<seq>"
-		for s in self.pos2seq.values():
-			print ">"+s.title
-			print s.sequence
+	#def save(self):
+	#	print self.header
+	#	print "<seq>"
+	#	for s in self.pos2seq.values():
+	#		print ">"+s.title
+	#		print s.sequence
 
 
 	
@@ -269,7 +269,7 @@ if __name__ == '__main__':
 	#print len(test.connections.keys())
 
 	for c in test.connections.values():
-		print "test", c.value
+		print ("test", c.value)
 
 	#test.save()
 
