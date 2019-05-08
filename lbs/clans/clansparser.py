@@ -68,9 +68,6 @@ class connection:
 class clansrun:
 	def __init__(self, runfile, onlywarn=False, readHSP=True, HSPcut=10, accparser=lambda x: x, warn=True):
 
-
-
-
 		def readandstore(store):
 			line = runfile.readline()
 			store+=line 
@@ -81,8 +78,7 @@ class clansrun:
 		self.pos2seq = {}
 		self.connections = {}
 		self.clusters = {}	
-		
-		
+
 		counter = 0
 
 		line, self.header = readandstore("")
@@ -94,15 +90,13 @@ class clansrun:
 
 		self.header = self.header[:self.header[:-1].rfind('\n')]
 
-		
-	
 		while line and not line=="</seq>\n":
 			if line[0]==">":
 				defline = line[1:] # without ">"
 				
 				gi = accparser(defline)
 								
-				if not self.gi2pos.has_key(gi):
+				if not gi in self.gi2pos:
 					self.gi2pos[gi] = str(counter)		
 				else:
 					self.gi2pos[gi] = self.gi2pos[gi] + ";" + str(counter)
@@ -153,11 +147,12 @@ class clansrun:
 
 					ident = makeid(f,t)
 
-					if self.connections.has_key(ident):
+					if ident in self.connections:
 						if self.connections[ident].value != c.value:
-							#pass					
-							print ("error!")
-							sys.exit(-1)
+							pass	
+							#print (	self.connections[ident].value, 	c.value)		
+							#print ("error!")
+							#sys.exit(-1)
 
 					else:
 						self.connections[ident] = c
@@ -200,7 +195,7 @@ class clansrun:
 		
 			clustername = c[0]
 			#print clustername
-			while self.clusters.has_key(clustername):
+			while clustername in self.clusters:
 				#print "error in CLANS run file, duplicate cluster name %s" % (c[0])
 				clustername = clustername+"_"+str(counter)
 				counter += 1
@@ -227,7 +222,7 @@ class clansrun:
 
 			for numb in c[5].split(';'):
 				if not numb=='':		
-					if dupcontrol.has_key(numb):
+					if numb in dupcontrol:
 						if warn:
 							print ("seq nr %s already in cluster %s, cannot add to culster %s" % (numb, dupcontrol[numb], clustername))
 						if not onlywarn:
@@ -258,20 +253,9 @@ class clansrun:
 	#		print ">"+s.title
 	#		print s.sequence
 
-
-	
-
-
 	
 if __name__ == '__main__':
-	test = clansrun(open(sys.argv[1]), onlywarn=True)
-
-	#print len(test.connections.keys())
-
-	for c in test.connections.values():
-		print ("test", c.value)
-
-	#test.save()
+	pass
 
 
 				
