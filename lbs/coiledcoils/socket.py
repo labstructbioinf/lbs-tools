@@ -12,6 +12,9 @@ def parse_socket_output(filename, method='overlap'):
                     'overlap' - sum of the ranges of 'heptads' and 'knobs'
     :return: dict with the parsed coiled coils informations (if present) or 0 (if coiled coils absent)
     """
+    
+    assert method in ['overlap', 'heptads', 'knobs']
+    
     # Read all lines from file
     try:
         f = open(filename, 'r')
