@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import sys, math
 
 #Then I used your scripts to compute the rmsds but for the RMSD->score scaling function, I used a sigmoid. I got the base form of a sigmoid from Wikipedia
 #1./(1 + numpy.exp(-value))
@@ -13,8 +14,8 @@ import pandas as pd
 #I played around with a couple of values and found factor=4 and shift=15 to work OK-ish in this case.
 
 
-def conversion_function1(value, factor=1.5, shift=2): # RMSD-like (lower the better)
-    return 1./(1 + math.exp(- factor *(value - shit)))
+def conversion_function_RMSD(value, factor=1.5, shift=0.5): # RMSD-like (lower the better)
+    return 1./(1 + math.exp(- factor *(value - shift)))
 
 def conversion_function2(value): #  (higher the better)
     return math.exp(-1*(value/1 ))
@@ -67,27 +68,52 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		self.keys = list(set(df.id1.tolist() + df.id2.tolist()))
 		# for bi-directional hits pick the one with smallest/biggest value
 		self.df[['id1', 'id2']] = np.sort(self.df[['id1', 'id2']], axis=1)
+		
 		if pickmin:
-			self.links = self.df.loc[self.df.groupby(['id1','id2'])["evalue"].idxmin()]
+			self.links = self.df.loc[self.df.groupby(['id1','id2'])["score"].idxmin()]
 		else:
-			self.links = self.df.loc[self.df.groupby(['id1','id2'])["evalue"].idxmax()]
-		self.links['evalue'] = self.links['evalue'].apply(cf)
-		self.links=self.links.values
+			self.links = self.df.loc[self.df.groupby(['id1','id2'])["score"].idxmax()]
 			
-	def write(self, outfile):
+		self.links['score'] = self.links['score'].apply(cf)
+		self.links=self.links[['id1', 'id2', 'score']].values
+		
+		self.key2pos = {}
+		for pos, k in enumerate(self.keys):
+			self.key2pos[str(k)]=pos
+			
+	def write(self, outfile, groups=None):
 		f = open(outfile, 'w')
 		f.write('sequences=%s\n' % len(self.keys))
 		f.write(self.header)
-		key2pos = {}
-		for pos, k in enumerate(self.keys):
-			key2pos[str(k)]=pos
+
+		for k in self.keys:
 			f.write(">%s\n" % k)
-			# FIXME!
 			f.write("X\n")
+			# FIXME!
+
 		f.write("</seq>\n<hsp>\n")
 		for l in self.links:
-			f.write("%s %s:%s\n" % (key2pos[l[0]], key2pos[l[1]], l[2]))
+			#print(l)
+			f.write("%s %s:%s\n" % (self.key2pos[l[0]], self.key2pos[l[1]], l[2]))
 		f.write("</hsp>")
+
+		if groups != None:
+			pos=-1
+			for color, group in groups:
+				pos+=1
+				if len(group)==0: continue
+				cr, cg, cb = color
+							
+				f.write("""\n<seqgroups>
+name=%s
+type=%s
+size=6
+hide=0
+color=%s;%s;%s
+numbers=%s;
+</seqgroups>""" % (str(pos), 0, int(cr*255),int(cg*255),int(cb*255), ";".join([str(i) for i in group])))
+				
+		
 		f.close()
 		
 if __name__ == "__main__":
@@ -96,8 +122,8 @@ if __name__ == "__main__":
 	# makeblastdb -in PF00672_seed.txt -dbtype prot
 	# blastp -db PF00672_seed.txt -query PF00672_seed.txt -outfmt "6 qseqid sseqid evalue" -out PF00672_seed.BLAST.csv -num_threads 4
 
-	df = pd.read_csv('/Users/sdh/Documents/projekty/tab2clans/PF00672_seed.BLAST.csv', sep='\t', names=['id1', 'id2', 'evalue'])
-	df = df[df.evalue <= 1e-3]
+	df = pd.read_csv(sys.argv[1], sep='\t', names=['id1', 'id2', 'score'])
+	#df = df[df.evalue <= 1e-3]
 	cw = clanswriter(df)
 	cw.write('temp.clans')
 
