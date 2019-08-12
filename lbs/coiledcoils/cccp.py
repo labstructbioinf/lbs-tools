@@ -1,4 +1,10 @@
-import tempfile, sys, math, numpy, subprocess, os, itertools
+import tempfile
+import sys
+import math
+import numpy
+import subprocess
+import os
+import itertools
 import os.path
 import numpy as np
 
@@ -14,7 +20,7 @@ pihelix_p = 4.3985
 # Wychodzi 1.1689 (helanal), spore stdev - 0.3423
 pihelix_d = 1.1689
 	
-def inTheCore_new(ph1, w1, rep_len):
+def in_the_core_new(ph1, w1, rep_len):
 	#ph1+=5
 	
 	#w1 = 102.8 # 7/2
@@ -27,48 +33,48 @@ def inTheCore_new(ph1, w1, rep_len):
 	def adj(ang):
 		ang += 180
 	
-		if ang>360:
+		if ang > 360:
 			c = int(ang/360)
 			return ang - (360*c) - 180 
 		else:
 			return ang - 180
 	
-	fullrepeat = [adj(ph1+(w1*i)) for i in range(rep_len)]
+	fullrepeat = [adj(ph1 + (w1*i)) for i in range(rep_len)]
 		
 	#print fullrepeat
 	
-	return sorted(fullrepeat, key=lambda x:abs(x))[0]
+	return sorted(fullrepeat, key = lambda x:abs(x))[0]
 	
 	#sys.exit(-1)
 	
 	
-def inTheCore(ph1, rep_len):
+def in_the_core(ph1, rep_len):
 	
 	#w1 = 360.0 / (1.0 * rep_len / rep_turn)
 	w1 = 360.0 / rep_len 
 	
 
-	l=[ph1]
+	l = [ph1]
 
-	p=ph1
+	p = ph1
 	while True:
-		p=p+w1
-		if p>=180: break
+		p = p + w1
+		if p >= 180: break
 		l.append(p)
 
-	p=ph1
+	p = ph1
 	while True:
-		p=p-w1
-		if p<=-180: break
+		p = p - w1
+		if p <= -180: break
 		l.append(p)
 	
-	assert len(l)==rep_len
-	temp = sorted(l, key=lambda x:abs(x))
+	assert len(l) == rep_len
+	temp = sorted(l, key = lambda x:abs(x))
 	#print temp
 	return temp[0]
 	
-def inTheCore_pandas(row): 
-	return inTheCore_new(row['ph1'], row['w1'], row['rep_len'])
+def in_the_core_pandas(row):
+	return in_the_core_new(row['ph1'], row['w1'], row['rep_len'])
 	#return inTheCore(row['ph1'], row['rep_len'])
 
 def calcPER(P, tolerance = 0.01):
@@ -76,13 +82,13 @@ def calcPER(P, tolerance = 0.01):
 	return f.p, f.q
 
 def w0_P_to_p(w0, P):
-	return P / (1 + P * w0 / 360)
+	return P / (1 + P*w0 / 360)
 
 def w0_to_P(w0, residues_per_turn):
-	return residues_per_turn / ( 1 - (residues_per_turn * w0 / 360) )
+	return residues_per_turn / (1 - (residues_per_turn*w0 / 360))
 	
 def P_to_w0(P, residues_per_turn):
-	return  (- residues_per_turn / P + 1) / residues_per_turn * 360
+	return  (- residues_per_turn / P + 1) / residues_per_turn*360
 
 def calcphi(heptad, phi1):
 
@@ -90,11 +96,9 @@ def calcphi(heptad, phi1):
 	heptadlen   = 360/7.0
 
 	distto_f = 3 - heporder.index(heptad)   
-	phi=phi1-heptadlen*distto_f  
+	phi = phi1 - heptadlen*distto_f
 
 	return phi+9 # -26 -- 26 range
-	
-	
 
 def make_bb(f, outname, chainlen, chains  = ['A', 'B', 'C', 'D', 'E']):
 	
@@ -114,8 +118,6 @@ def make_bb(f, outname, chainlen, chains  = ['A', 'B', 'C', 'D', 'E']):
 
     fpdb.close()
 
-
-
 def CCCPgenerate(outname, cN, chL, R0, R1, w0, w1, A, ph1, cr, dph0, Zoff, Zoff_type):
 	"""
 	dla zadanych parmetrow uruchamia CCCP + odbudowa backbone BBQ
@@ -134,7 +136,7 @@ def CCCPgenerate(outname, cN, chL, R0, R1, w0, w1, A, ph1, cr, dph0, Zoff, Zoff_
 	p.wait()
 	stdout, stderr = p.communicate()	
 	
-	if stderr!='': 
+	if stderr != '':
 		print('cos poszlo nie tak...')
 		sys.exit(-1)
 	
@@ -145,7 +147,7 @@ def CCCPgenerate(outname, cN, chL, R0, R1, w0, w1, A, ph1, cr, dph0, Zoff, Zoff_
 	make_bb(coords, outname, chL)
 	
 	cmd = 'java -classpath /Users/sdh/apps/BBQ/:/Users/sdh/apps/BBQ/jbcl.jar BBQ -d=q_50_xyz.dat -r=./' + str(outname) + '.pdb > ./' + str(outname) + '.bbq.pdb'
-	p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+	p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
 	p.wait()
 	
 	f = open('temp.seq', 'w')
@@ -153,14 +155,14 @@ def CCCPgenerate(outname, cN, chL, R0, R1, w0, w1, A, ph1, cr, dph0, Zoff, Zoff_
 	f.close()
 	
 	cmd = '/Users/sdh/apps/scwrl4/Scwrl4 -s temp.seq -i %s.bbq.pdb -o %s.bbq.scwrl.pdb' % (outname, outname)
-	p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+	p = subprocess.Popen(cmd, shell = True, stderr  =subprocess.PIPE, stdout = subprocess.PIPE)
 	p.wait()
 	
 	os.system('rm temp.seq hot.grp %s.pdb %s.bbq.pdb' % (outname, outname))
 	
 	return True
 	
-	# usuwanie skrajnych pozycji
+	# removing extreme positions
 	"""
 	
 	p = PDBParser(PERMISSIVE=1)
@@ -183,8 +185,8 @@ def CCCPgenerate_periodicity(P, name, cN, chL, R0, ph1, cr, dph0, Zoff, Zoff_typ
 	P - periodicity of a bundle
 	"""
 	
-	if P==residues_per_turn:
-		print "P==p"
+	if P == residues_per_turn:
+		print "P == p"
 		sys.exit(-1)
 	
 	name = str(name)
@@ -315,8 +317,8 @@ class FitParser():
 		#22 error = 0.700876
 
 
-		f=open(filename)
-		l=f.readline()
+		f = open(filename)
+		l = f.readline()
 		while l.find('structure summary:')<>-1:
 			l=f.readline()
 		
@@ -355,7 +357,7 @@ class FitParser():
 		print
 
 	def renamewebCCCP(self, filename, phisteps, zsteps):
-		assert phisteps==zsteps
+		assert phisteps == zsteps
 		number = int(filename.split('.')[0])-1
 	
 		axial_rotation, axial_shift = number / zsteps, number % phisteps
@@ -396,13 +398,13 @@ if __name__ == "__main__":
 	
 	for chains, delta_phi0, pre_Zoff, orient, R0_range in [tetramer(ap=True)]:
 		R0 = R0_range[0]
-		assert len(R0_range)==1
+		assert len(R0_range) == 1
 	
 		for Zoff_raw in numpy.linspace(1, 4, 7):
 	
 			Zoff = pre_Zoff.format(Zoff_raw)
 
-			pos=0
+			pos = 0
 			for phi1 in numpy.linspace(-pmax, pmax, (pmax/2)+1):
 				phi1 = phi1 - 6.5		
 
@@ -412,7 +414,7 @@ if __name__ == "__main__":
 													   orient, delta_phi0, Zoff, Zoff_type, 3.62705, ahelix_d, ahelix_R1, justprint=False)
 				print >>f, res
 				print res
-				pos+=1
+				pos += 1
 
 
 
