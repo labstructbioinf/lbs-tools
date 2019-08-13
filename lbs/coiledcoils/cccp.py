@@ -212,7 +212,7 @@ def cccp_generate_periodicity(P, name, num_chains, chL, R0, ph1, cr, dph0, z_off
 	"""
 	
 	if P == residues_per_turn:
-		print "P == p"
+		print("P == p")
 		sys.exit(-1)
 	
 	name = str(name)
@@ -425,7 +425,7 @@ if __name__ == "__main__":
 				res = cccp_generate_periodicity(P, name, num_chains, length, R0, "[%s]" % ','.join(itertools.repeat(str(phi1), num_chains)),\
 													   orient, delta_phi0, z_off, z_off_type, 3.62705, ahelix_d, ahelix_R1, justprint=False)
 				print >>f, res
-				print res
+				print(res)
 				pos += 1
 
 
