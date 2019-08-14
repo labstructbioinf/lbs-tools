@@ -41,6 +41,7 @@ Description of variables:
 	Other variables defined for this script:
 	
 	rep_len - repeat length
+	ax_rise - axial rise per residue in the helix
 
 	Where variables are renamed or reassigned in the functions and class defined below, clear indications are given 
 	in the function, class or method docstrings. Where no indication is given, or where the variable is simply
@@ -62,7 +63,7 @@ import os.path
 import itertools
 
 #from sympy import nsimplify
-from Bio.PDB.PDBParser import PDBParser
+#from Bio.PDB.PDBParser import PDBParser
 
 ahelix_p = 3.62705
 ahelix_d = 1.51
@@ -173,7 +174,9 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	"""
 
 	# Write parameters to temporary file to pass them to Octave
-	tf = tempfile.NamedTemporaryFile(delete=False)
+	# TODO: this section does not work in Python 3
+	tf = tempfile.NamedTemporaryFile(delete = False)
+	#tf.write("generateCrickBB('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}, '{7}', '{8}', '{9}', '{10}, '{11}')".format(num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type))
 	tf.write("generateCrickBB(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, struct(\'%s\', 1))" % (num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type))
 	tf.close()
 	
@@ -181,7 +184,7 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	cmd = "octave-cli -q %s" % tf.name # ... and pass parameters to generate backbone trace
 	
 	current_working_directory = os.getcwd() # re-define command for better readability (access current working directory)
-	os.chdir('/Users/sdh/apps/cccp') # Change directory to CCCP app location
+	os.chdir('/home/jhaffner/Desktop/CCCP/cccp') # Change directory to CCCP app location
 	
 	p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
 	p.wait()
@@ -198,19 +201,19 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	make_bb(coords, outname, chain_length) # Create PDB file
 	
 	# Convert backbone trace to poly-Alanin using BBQ
-	cmd = 'java -classpath /Users/sdh/apps/BBQ/:/Users/sdh/apps/BBQ/jbcl.jar BBQ -d=q_50_xyz.dat -r=./' + str(outname) + '.pdb > ./' + str(outname) + '.bbq.pdb'
-	p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-	p.wait()
+	#cmd = 'java -classpath /Users/sdh/apps/BBQ/:/Users/sdh/apps/BBQ/jbcl.jar BBQ -d=q_50_xyz.dat -r=./' + str(outname) + '.pdb > ./' + str(outname) + '.bbq.pdb'
+	#p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+	#p.wait()
 	
-	f = open('temp.seq', 'w') # Write Alanin one letter code to amino acid sequence file
-	print >>f, "A"*(num_chains*chain_length) 
-	f.close()
+	#f = open('temp.seq', 'w') # Write Alanin one letter code to amino acid sequence file
+	#print >>f, "A"*(num_chains*chain_length) 
+	#f.close()
 	
-	cmd = '/Users/sdh/apps/scwrl4/Scwrl4 -s temp.seq -i %s.bbq.pdb -o %s.bbq.scwrl.pdb' % (outname, outname)
-	p = subprocess.Popen(cmd, shell = True, stderr  =subprocess.PIPE, stdout = subprocess.PIPE)
-	p.wait()
+	#cmd = '/Users/sdh/apps/scwrl4/Scwrl4 -s temp.seq -i %s.bbq.pdb -o %s.bbq.scwrl.pdb' % (outname, outname)
+	#p = subprocess.Popen(cmd, shell = True, stderr  =subprocess.PIPE, stdout = subprocess.PIPE)
+	#p.wait()
 	
-	os.system('rm temp.seq hot.grp %s.pdb %s.bbq.pdb' % (outname, outname))
+	#Sos.system('rm temp.seq hot.grp %s.pdb %s.bbq.pdb' % (outname, outname))
 	
 	return True
 	
@@ -232,7 +235,7 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	#"""
 				
 
-def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir, dph0, z_off, z_type, residues_per_turn, d, r1, justprint=False):
+def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir, dph0, z_off, z_type, residues_per_turn, ax_rise, r1, justprint=False):
 	"""
 	P - periodicity of a bundle
 	"""
@@ -243,25 +246,20 @@ def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir,
 	
 	name = str(name)
 	
-	# values ​​for a-helix
-	#residues_per_turn = 3.62705 # residues / turn in a straight helix
-	#d = 1.51 # axial rise per residue in a straight helix
-	
-	# in the science h-bond paper w1 is fixed (supp. data page 7)
 	w1 = 360.0 / P # as in CCCP paper (not "p"!); page 1087
 	
 	# option 1 
 	#w0 = (- residues_per_turn / P + 1) / residues_per_turn * 360 # as in periodicity calculations in YadA paper
-	#a = math.degrees(math.asin((r0 * math.radians(w0)) / d)) # pitch angle as in CCCP
+	#a = math.degrees(math.asin((r0 * math.radians(w0)) / ax_rise)) # pitch angle as in CCCP
 	
 	# option 2 (Lupas & Gruber 2005)
 	# gives identical results
 	
-	delta_t = 2*math.pi * ( 1/residues_per_turn - 1/P )
-	pitch = (2*math.pi/delta_t) * math.sqrt(math.pow(d,2) - math.pow(r0*delta_t,2))
+	delta_t = 2*math.pi * (1/residues_per_turn - 1/P)
+	pitch = (2*math.pi/delta_t) * math.sqrt(math.pow(ax_rise, 2) - math.pow(r0*delta_t, 2))
 	
 	a = math.degrees(math.atan(2*math.pi*r0 / pitch))
-	w0 = math.degrees((d * math.sin(math.radians(a))) / r0)
+	w0 = math.degrees((ax_rise * math.sin(math.radians(a))) / r0)
 	
 	w0 = numpy.around(w0, decimals=3)
 	a = numpy.around(a, decimals=3)
@@ -271,7 +269,7 @@ def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir,
 	if not justprint:
 		cccp_generate(name, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type)
 	
-	return ' '.join([str(i[0])+"_"+i[1] for i in zip([name, P, d, r0, w0, a, r1, w1, ph1, dph0, z_off, c_dir, pitch, num_chains], ['name', 'P', 'd', 'r0', 'w0', 'a', 'r1', 'w1', 'ph1', 'dph0', 'z_off', 'c_dir', 'pitch', 'chains'])])
+	return ' '.join([str(i[0])+"_"+i[1] for i in zip([name, P, ax_rise, r0, w0, a, r1, w1, ph1, dph0, z_off, c_dir, pitch, num_chains], ['name', 'P', 'ax_rise', 'r0', 'w0', 'a', 'r1', 'w1', 'ph1', 'dph0', 'z_off', 'c_dir', 'pitch', 'chains'])])
 
 
 class FitParser():
@@ -424,8 +422,8 @@ def tetramer(ap=False):
 if __name__ == "__main__":	
 
 
-	#Zoff_type = "registerzoff"
-	z_off_type = "zoffaa"
+	#z_type = "registerzoff"
+	z_type = "zoffaa"
 	
 	P = 3.5
 	pmax = 16
@@ -449,7 +447,7 @@ if __name__ == "__main__":
 				name = "-".join([str(num_chains), str(z_off_raw), str(pos)])
 
 				res = cccp_generate_periodicity(P, name, num_chains, length, r0, "[%s]" % ','.join(itertools.repeat(str(phi1), num_chains)),\
-													   orient, delta_phi0, z_off, z_off_type, 3.62705, ahelix_d, ahelix_R1, justprint=False)
+													   orient, delta_phi0, z_off, z_type, 3.62705, ahelix_d, ahelix_R1, justprint=False)
 				print >>f, res
 				print(res)
 				pos += 1
@@ -464,8 +462,6 @@ if __name__ == "__main__":
 	#sys.exit(-1)
 	#print w0_P_to_p(-2.45, 3.5)
 	#sys.exit(-1)
-
-	#print in_the_core(44.331749962, 360/11.0, 11)
 	
 	#pass
 
