@@ -1,7 +1,7 @@
 # This file uses PEP8 conventions.
 # Variables that also appear in the CCCP Generator, but under a different name, are listed below.
 
-""" This script uses the CCCP generator developed by Grigoryan et al., and described by G. Grigoryan and W. F. DeGrado,
+""" This script uses the CCCP generator developed and described by G. Grigoryan and W. F. DeGrado in
 "Probing Designability via a Generalized Model of Helical Bundle Geometry", J. Mol. Biol., 405(4): 1079-1100 (2011).
 See also http://grigoryanlab.org/cccp/.
 
@@ -46,8 +46,10 @@ Description of variables:
 	in the function, class or method docstrings. Where no indication is given, or where the variable is simply
 	introduced, its meaning should match the one defined above.
 
-
-In this file, C-alpha backbones? are created from the CCCP generator and stored as ????
+The script also calls the BBQ (Backbone Building from Quadrulaterals) developed by Dominik Gront, Sebastian Kmiecik 
+and Andrzej Kolinski and described in "Backbone building from quadrilaterals: A fast and accurate algorithm for protein 
+backbone reconstruction from alpha carbon coordinates", Journal of Computational Chemistry, March 2007. 
+See also: https://doi.org/10.1002/jcc.20624 
 """
 
 import tempfile
