@@ -46,11 +46,6 @@ Description of variables:
 	Where variables are renamed or reassigned in the functions and class defined below, clear indications are given 
 	in the function, class or method docstrings. Where no indication is given, or where the variable is simply
 	introduced, its meaning should match the one defined above.
-
-The script also calls the BBQ (Backbone Building from Quadrulaterals) developed by Dominik Gront, Sebastian Kmiecik 
-and Andrzej Kolinski and described in "Backbone building from quadrilaterals: A fast and accurate algorithm for protein 
-backbone reconstruction from alpha carbon coordinates", Journal of Computational Chemistry, March 2007. 
-See also: https://doi.org/10.1002/jcc.20624 
 """
 
 import tempfile
@@ -168,7 +163,6 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	
 	1. Calls the octave script (generateCrickBB.m, see module docstring for citation and doi)
 	2. Writes the output coordinates (backbone trace) to a PDB file
-	3. Call BBQ (Backbone Building from Quadrulaterals) to convert the backbone trace to poly-Alanin
 
 	With the exception of the name of the output files (outname), all parameters are defined in the module docstring (see above).
 	"""
@@ -200,39 +194,7 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	coords = numpy.array([i.split() for i in stdout.split('\n')[2:-2]], dtype = numpy.dtype(float) ) # Write to numpy array
 	make_bb(coords, outname, chain_length) # Create PDB file
 	
-	# Convert backbone trace to poly-Alanin using BBQ
-	#cmd = 'java -classpath /Users/sdh/apps/BBQ/:/Users/sdh/apps/BBQ/jbcl.jar BBQ -d=q_50_xyz.dat -r=./' + str(outname) + '.pdb > ./' + str(outname) + '.bbq.pdb'
-	#p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-	#p.wait()
-	
-	#f = open('temp.seq', 'w') # Write Alanin one letter code to amino acid sequence file
-	#print >>f, "A"*(num_chains*chain_length) 
-	#f.close()
-	
-	#cmd = '/Users/sdh/apps/scwrl4/Scwrl4 -s temp.seq -i %s.bbq.pdb -o %s.bbq.scwrl.pdb' % (outname, outname)
-	#p = subprocess.Popen(cmd, shell = True, stderr  =subprocess.PIPE, stdout = subprocess.PIPE)
-	#p.wait()
-	
-	#Sos.system('rm temp.seq hot.grp %s.pdb %s.bbq.pdb' % (outname, outname))
-	
 	return True
-	
-	# removing extreme positions
-	#"""
-	
-	#p = PDBParser(PERMISSIVE=1)
-
-	#structure_id = outname
-	#filename = outname + '.bbq.pdb'
-	#s = p.get_structure(structure_id, filename)
-	
-	#for model in s:
-		#for chain in model:
-			#print chain
-			#for id in [chain_length*(i)+1 for i in range(num_chains)]:
-				#print id
-				#chain.detach_child((' ', id, ' '))
-	#"""
 				
 
 def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir, dph0, z_off, z_type, residues_per_turn, ax_rise, r1, justprint=False):
@@ -244,7 +206,7 @@ def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir,
 		print("P == p")
 		sys.exit(-1)
 	
-	name = str(name)
+	name = str(name) # Name of the structure 
 	
 	w1 = 360.0 / P # as in CCCP paper (not "p"!); page 1087
 	
@@ -403,7 +365,6 @@ class FitParser():
 		return newname
 	
 
-
 def tetramer(ap=False):
 
 	num_chains = 4
@@ -419,8 +380,8 @@ def tetramer(ap=False):
 		
 	return num_chains, delta_phi0, pre_z_off, orient, R0_range
 	
-if __name__ == "__main__":	
 
+if __name__ == "__main__":	
 
 	#z_type = "registerzoff"
 	z_type = "zoffaa"
@@ -451,20 +412,3 @@ if __name__ == "__main__":
 				print >>f, res
 				print(res)
 				pos += 1
-
-
-
-	#print CCCPgenerate_periodicity(3.631, 'prosta', 2, 36, 5, -9, '[1]', '[180]', '[0]', 'zoffaa', 3.63, 1.51, 2.26)
-	#print CCCPgenerate_periodicity(3.5, 'krzywa', 2, 36, 5, -9, '[1]', '[180]', '[0]', 'zoffaa', 3.63, 1.51, 2.26)
-
-
-	#print calcPER(3.55, tolerance=0.5)
-	#sys.exit(-1)
-	#print w0_P_to_p(-2.45, 3.5)
-	#sys.exit(-1)
-	
-	#pass
-
-
-	#print round(w0_to_P((np.degrees(float(sys.argv[1]))), 3.62125352),3)
-	#print calcPER(4.45, tolerance=0.025)
