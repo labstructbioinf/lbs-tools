@@ -33,7 +33,7 @@ Description of variables:
 			 Since absolute values might not be useful for fitting, the parameter z_off_type can be used to modify z_off.
 	z_type - Also referred to as varargin in the CCCP generator, used to modify z_off. Passed as a string.
 			 Description taken / paraphrased from the CCCP generator:
-			 zoffaa - z_off referes to the vertical offset between 'a' positions on opposing chains
+			 zoffaa - z_off referes to the vertical offset between "a" positions on opposing chains
 			 registerzoff - z_off will refer to points on the Crick curves that point directly into the interface
 			 apNNzoff - the Z offset is interpreted as between the N termini of chains 1 and k if k runs parallel to 1,
 			 and the N terminus of chain 1 and the C terminus of chain k if k is anti-parallel to 1.
@@ -103,7 +103,7 @@ def in_the_core(ph1, w1, rep_len):
 	
 def in_the_core_pandas(row):
 	""" This function calls in_the_core (defined above), using values specified in a pandas data frame as inputs. """
-	return in_the_core(row['ph1'], row['w1'], row['rep_len'])
+	return in_the_core(row["ph1"], row["w1"], row["rep_len"])
 
 def calcPER(P, tolerance = 0.01):
 	# TODO: What does this function do?
@@ -121,7 +121,7 @@ def P_to_w0(P, residues_per_turn):
 
 def calcphi(heptad, phi1):
 
-	heporder = 'dgcfbea'
+	heporder = "dgcfbea"
 	heptadlen   = 360/7.0
 
 	distto_f = 3 - heporder.index(heptad)   
@@ -129,7 +129,7 @@ def calcphi(heptad, phi1):
 
 	return phi+9 # -26 -- 26 range
 
-def make_bb(f, outname, chain_length, chain_names  = ['A', 'B', 'C', 'D', 'E']):
+def make_bb(f, outname, chain_length, chain_names  = ["A", "B", "C", "D", "E"]):
 	""" This function takes a file with coordinates XYZ as its input and writes a PDB file. 
 	The input file is generated using the CCCP Generator ("generateCrickBB.m").  
 	It is called in the cccp_generate wrapper below. 
@@ -142,7 +142,7 @@ def make_bb(f, outname, chain_length, chain_names  = ['A', 'B', 'C', 'D', 'E']):
 	chain_names  - a list of letters to assign to individual chains
 	"""
 	
-	fpdb = open(outname + '.pdb', 'w') # Initialize PDB file to be written
+	fpdb = open(outname + ".pdb", "w") # Initialize PDB file to be written
 
 	atom_id = 1 # Start with first CA as first atom
 	res_id  = 1 # Start with first residue
@@ -150,9 +150,9 @@ def make_bb(f, outname, chain_length, chain_names  = ['A', 'B', 'C', 'D', 'E']):
 	for coords in f:
 
 		coords = numpy.round(coords, 3) # round coordinates to three digits
-		fpdb.write('ATOM  ' + '{0: >5}'.format(str(atom_id)) + '{0: >4}'.format('CA') + ' {0: >4}'.format('GLY') + ' ' + chain_names[int((res_id-1) / chain_length)] + 
-				   '{0: >4}'.format(str(res_id)) + '    ' + '{0: >8}'.format(coords[0]) + '{0: >8}'.format(coords[1]) + '{0: >8}'.format(coords[2]) + 
-				   '{0: >6}'.format('1.00') + '{0: >6}'.format('0.00') + '\n') # Write PDB, use placeholders for consistent formatting
+		fpdb.write("ATOM  " + "{0: >5}".format(str(atom_id)) + "{0: >4}".format("CA") + " {0: >4}".format("GLY") + " " + chain_names[int((res_id-1) / chain_length)] + 
+				   "{0: >4}".format(str(res_id)) + "    " + "{0: >8}".format(coords[0]) + "{0: >8}".format(coords[1]) + "{0: >8}".format(coords[2]) + 
+				   "{0: >6}".format("1.00") + "{0: >6}".format("0.00") + "\n") # Write PDB, use placeholders for consistent formatting
 		res_id  += 1 # Move to the next residue
 		atom_id += 4 # Move to the next CA
 
@@ -168,30 +168,31 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	"""
 
 	# Write parameters to temporary file to pass them to Octave
-	# TODO: this section does not work in Python 3
-	tf = tempfile.NamedTemporaryFile(delete = False)
-	#tf.write("generateCrickBB('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}, '{7}', '{8}', '{9}', '{10}, '{11}')".format(num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type))
-	tf.write("generateCrickBB(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, struct(\'%s\', 1))" % (num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type))
+	tf = tempfile.NamedTemporaryFile(mode = 'w', delete = False)
+	temp = "generateCrickBB(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, struct(\"%s\", 1))" % (num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type)
+	tf.write(temp)
 	tf.close()
+
+	# Define Octave call as a string...
+	cmd = ("octave-cli -q %s" % tf.name).split(' ') # ... and pass parameters to generate backbone trace
+
+	current_working_directory = os.getcwd() # define location of current working directory before switching
+	os.chdir("/home/jhaffner/Desktop/CCCP/cccp") # Change directory to CCCP app location
 	
-	# Call Octave, get generated backbone trace
-	cmd = "octave-cli -q %s" % tf.name # ... and pass parameters to generate backbone trace
-	
-	current_working_directory = os.getcwd() # re-define command for better readability (access current working directory)
-	os.chdir('/home/jhaffner/Desktop/CCCP/cccp') # Change directory to CCCP app location
-	
-	p = subprocess.Popen(cmd, shell = True, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+	p = subprocess.Popen(cmd, shell = False, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
 	p.wait()
 	stdout, stderr = p.communicate() # Get the output (the generated backbone trace)	
-	
-	if stderr != '':
-		print('something went wrong...')
+	stdout, stderr = stdout.decode('ascii'), stderr.decode('ascii') # Decode byte-like object to string
+
+	if stderr  not in ['']:
+		print("something went wrong...")
+		print(stderr)
 		sys.exit(-1)
-	
-	os.chdir(current_working_directory) 
+
+	os.chdir(current_working_directory) # Go back to current working directory 
 	
 	# Process the backbone trace XYZ
-	coords = numpy.array([i.split() for i in stdout.split('\n')[2:-2]], dtype = numpy.dtype(float) ) # Write to numpy array
+	coords = numpy.array([i.split() for i in stdout.split("\n")[2:-2]], dtype = numpy.dtype(float) ) # Write to numpy array
 	make_bb(coords, outname, chain_length) # Create PDB file
 	
 	return True
@@ -231,35 +232,35 @@ def cccp_generate_periodicity(P, name, num_chains, chain_length, r0, ph1, c_dir,
 	if not justprint:
 		cccp_generate(name, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_dir, dph0, z_off, z_type)
 	
-	return ' '.join([str(i[0])+"_"+i[1] for i in zip([name, P, ax_rise, r0, w0, a, r1, w1, ph1, dph0, z_off, c_dir, pitch, num_chains], ['name', 'P', 'ax_rise', 'r0', 'w0', 'a', 'r1', 'w1', 'ph1', 'dph0', 'z_off', 'c_dir', 'pitch', 'chains'])])
+	return " ".join([str(i[0])+"_"+i[1] for i in zip([name, P, ax_rise, r0, w0, a, r1, w1, ph1, dph0, z_off, c_dir, pitch, num_chains], ["name", "P", "ax_rise", "r0", "w0", "a", "r1", "w1", "ph1", "dph0", "z_off", "c_dir", "pitch", "chains"])])
 
 
 class FitParser():
 
 
-	short_key = {'starting heptad position':'heptad',
-				 'r1 (a)':'r1',
-				 'r0 (a)':'r0',
-				 'rise per residue (a)': 'd',
-				 'alpha (rad)':'a',
-				 'w0 (rad/res)':'w0',
-				 'w1 (rad/res)':'w1',
-				 'error':'fit_rmsd',
-				 'pitch (a)':'PITCH',
-				 'ph1 (rad)':'ph1',
-				 'ph0 (rad)':'ph0',
-				 'absolute ap z_off (a)':'ab_ap_z_off',
-				 'dph0_p_ap (rad)':'dph0_p_ap',
-				 'dph0_2 (rad)':'dph0_2',
-				 'dph0_3 (rad)':'dph0_3',
-				 'dph0_4 (rad)':'dph0_4',
-				 'absolute z_off_4 (a)':'abs_z_off_4',
-				 'absolute z_off_2 (a)':'abs_z_off_2',
-				 'absolute z_off_3 (a)':'abs_z_off_3',
-				 'message':'message',
-				 'Z_aa for chain 2 (a)':'zaa2',
-				 'Z_aa for chain 3 (a)':'zaa3',
-				 'Z_aa for chain 4 (a)':'zaa4',
+	short_key = {"starting heptad position":"heptad",
+				 "r1 (a)":"r1",
+				 "r0 (a)":"r0",
+				 "rise per residue (a)": "d",
+				 "alpha (rad)":"a",
+				 "w0 (rad/res)":"w0",
+				 "w1 (rad/res)":"w1",
+				 "error":"fit_rmsd",
+				 "pitch (a)":"PITCH",
+				 "ph1 (rad)":"ph1",
+				 "ph0 (rad)":"ph0",
+				 "absolute ap z_off (a)":"ab_ap_z_off",
+				 "dph0_p_ap (rad)":"dph0_p_ap",
+				 "dph0_2 (rad)":"dph0_2",
+				 "dph0_3 (rad)":"dph0_3",
+				 "dph0_4 (rad)":"dph0_4",
+				 "absolute z_off_4 (a)":"abs_z_off_4",
+				 "absolute z_off_2 (a)":"abs_z_off_2",
+				 "absolute z_off_3 (a)":"abs_z_off_3",
+				 "message":"message",
+				 "Z_aa for chain 2 (a)":"zaa2",
+				 "Z_aa for chain 3 (a)":"zaa3",
+				 "Z_aa for chain 4 (a)":"zaa4",
 				 }
 
 	def __init__(self, mode=1):
@@ -318,24 +319,24 @@ class FitParser():
 
 		f = open(filename)
 		l = f.readline()
-		while l.find('structure summary:') != -1:
+		while l.find("structure summary:") != -1:
 			l=f.readline()
 		
-		x = dict([x[:-1].split(' = ') for x in f.readlines() + [l]])
+		x = dict([x[:-1].split(" = ") for x in f.readlines() + [l]])
 		
 		for old_key in x.keys():
 			data = x.pop(old_key)
 			new_key = prefix + self.short_key[old_key]
 			try:
 				data = float(data)
-				if todegs and new_key in ['w0', 'w1', 'a', 'ph1']:
+				if todegs and new_key in ["w0", "w1", "a", "ph1"]:
 					data = math.degrees(data)
 			except:
 				pass # string
 				
 			x[new_key] = data
 		
-		x['parfile'] = os.path.basename(filename)
+		x["parfile"] = os.path.basename(filename)
 		
 		self.res = x
 		return self.res
@@ -346,17 +347,17 @@ class FitParser():
 			val = res[param]
 			try:
 				val = float(val)
-				if param in ['w0', 'w1', 'alpha', 'dph0_2', 'dph0_3', 'dph0_4', 'ph1']:
+				if param in ["w0", "w1", "alpha", "dph0_2", "dph0_3", "dph0_4", "ph1"]:
 					val = math.degrees(val)
 				val = round(val,2)
 			
 			except:
 				pass
-			print('%s' % val),
+			print("%s" % val),
 
 	def renameweb_cccp(self, filename, phisteps, zsteps):
 		assert phisteps == zsteps
-		number = int(filename.split('.')[0])-1
+		number = int(filename.split(".")[0])-1
 	
 		axial_rotation, axial_shift = number / zsteps, number % phisteps
 	
@@ -391,7 +392,7 @@ if __name__ == "__main__":
 	#Zoff_raw = 0
 	length = 7*3
 	
-	f = open('bb_gen.log', 'w')
+	f = open("bb_gen.log", "w")
 	
 	for num_chains, delta_phi0, pre_z_off, orient, R0_range in [tetramer(ap=True)]:
 		r0 = R0_range[0]
@@ -407,8 +408,9 @@ if __name__ == "__main__":
 
 				name = "-".join([str(num_chains), str(z_off_raw), str(pos)])
 
-				res = cccp_generate_periodicity(P, name, num_chains, length, r0, "[%s]" % ','.join(itertools.repeat(str(phi1), num_chains)),\
+				res = cccp_generate_periodicity(P, name, num_chains, length, r0, "[%s]" % ",".join(itertools.repeat(str(phi1), num_chains)),\
 													   orient, delta_phi0, z_off, z_type, 3.62705, ahelix_d, ahelix_R1, justprint=False)
-				print >>f, res
+				
+				f.write(res + "\n")
 				print(res)
 				pos += 1
