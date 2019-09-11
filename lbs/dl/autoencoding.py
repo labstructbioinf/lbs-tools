@@ -2,7 +2,9 @@ import keras
 from keras.models import Model, Input
 from keras.layers import Dense
 import numpy as np
-def encoder_correlation_check(data_to_pca, n_fet=6, labels=nm, prev_best=2):
+def encoder_correlation_check(data_to_pca, n_fet=2, labels=nm, prev_best=2):
+    ts =[]
+    wq = []
     for i in range(1, n_fet):
         inp = Input(shape=(data_to_pca.shape[1], data_to_pca.shape[2]))
         l1 = Dense(i, activation = 'tanh')(inp)
@@ -11,7 +13,7 @@ def encoder_correlation_check(data_to_pca, n_fet=6, labels=nm, prev_best=2):
         encoder = Model(inp, l1)
         autoencoder.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
         autoencoder.fit(data_to_pca, data_to_pca,
-                        epochs=100,
+                        epochs=1000,
                         batch_size=256,
                         shuffle=False)
         decoded = autoencoder.predict(data_to_pca)
@@ -24,3 +26,4 @@ def encoder_correlation_check(data_to_pca, n_fet=6, labels=nm, prev_best=2):
         result_dev = (result - orginal_corr) ** 2
         ts.append(result_dev)
         return ts, wq
+        
