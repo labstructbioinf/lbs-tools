@@ -177,7 +177,7 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	cmd = ("octave-cli -q %s" % tf.name).split(' ') # ... and pass parameters to generate backbone trace
 
 	current_working_directory = os.getcwd() # define location of current working directory before switching
-	os.chdir("/home/jhaffner/Desktop/CCCP/cccp") # Change directory to CCCP app location
+	os.chdir("/Users/sdh/apps/cccp") # Change directory to CCCP app location
 	
 	p = subprocess.Popen(cmd, shell = False, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
 	p.wait()
@@ -187,6 +187,7 @@ def cccp_generate(outname, num_chains, chain_length, r0, r1, w0, w1, a, ph1, c_d
 	if stderr  not in ['']:
 		print("something went wrong...")
 		print(stderr)
+		print(tf.name)
 		sys.exit(-1)
 
 	os.chdir(current_working_directory) # Go back to current working directory 
