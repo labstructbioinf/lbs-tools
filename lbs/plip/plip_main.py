@@ -15,7 +15,7 @@ def convert_interaction_for_df(pdb, inter):
 
 	return row
 
-def run_plip(pdb, pdb_db_path):
+def run_plip(pdb, pdb_db_path, dump=True, dumpdir=''):
 	# input: one pdb index, (list of sequences to check - maybe process from all data later)
 	# main: load pdb from path
 	# out: status of job, save results in file during function run
@@ -23,6 +23,9 @@ def run_plip(pdb, pdb_db_path):
 	# lists of dicts, each dict one interaction
 	# out-format-alt: dataframe for pdb with ligands as rows and columns:
 	# restype_l, reschain_l, resnr_l, inter_type, restype, reschain, resnr, inter_data(maybe without already present columns)
+
+	if dimpdir!='' and dump:
+		assert dumpdir[-1]=='/', "dumpdir must end with '/'"
 
 	pdb_filepath        = pdb_db_path + pdb[1:3] + '/' + pdb + '.pdb1'
 	ligand_interactions = []
@@ -50,6 +53,6 @@ def run_plip(pdb, pdb_db_path):
 	# create df for pdb
 	df = pd.DataFrame(ligand_interactions, columns=['pdb', 'restype_l', 'reschain_l', 'resnr_l', 'inter_type',
 													'restype', 'reschain', 'resnr', 'inter_data'])
-
-	pickle.dump(df, open(pdb + '.p', 'wb')) # dump df
+	if dump:
+		pickle.dump(df, open(dumpdir+pdb + '.p', 'wb')) # dump df
 	return True
