@@ -12,13 +12,14 @@ def parse_socket_output(filename, method='overlap'):
                     'overlap' - sum of the ranges of 'heptads' and 'knobs'
     :return: dict with the parsed coiled coils informations (if present) or 0 (if coiled coils absent)
     """
-    
+    if type(filename) is not str:
+        return 0
     assert method in ['overlap', 'heptads', 'knobs']
-    
+
     # Read all lines from file
     try:
         f = open(filename, 'r')
-        lines = f.readlines()
+        lines = [line.rstrip() for line in f.readlines()]
         f.close()
     except (OSError, FileNotFoundError):
         return 0
@@ -33,21 +34,22 @@ def parse_socket_output(filename, method='overlap'):
             start_indices.append(i)
 
     # Iterate over all CC assignments
-    all_coils = []
+    all_coils = {}
     relations = []
     for i in range(0, len(start_indices) - 1):  # Last one is 'Finished' line
         start = start_indices[i]  # Starting line for CC assignment
         stop = start_indices[i + 1]  # End line for CC assignment (next assignment starts or 'Finished')
+        cc_id = 'cc_{}'.format(lines[start].split()[2].replace(':', ''))
         # Data
-        coil_info = {'indices': [], 'sequences': [], 'heptads': [], 'ambigous': False}
+        coil_info = {'helix_ids': [], 'indices': {}, 'sequences': {}, 'heptads': {}, 'ambigous': False, 'relations': []}
         for k in range(start, stop):
             line = lines[k].rstrip()
             if line.startswith('assigning heptad to helix'):
                 temp = line.split(' ')
                 # Get start and end residues for helix
                 try:
-                    if temp[6][0] == '-': # First residue is negative
-                        if temp[6].count('-') == 3: # Both residues are negative
+                    if temp[6][0] == '-':  # First residue is negative
+                        if temp[6].count('-') == 3:  # Both residues are negative
                             start_res = -int(temp[6].split('-')[1])
                             end_res = -int(temp[6].split('-')[3].split(':')[0])
                         else:
@@ -56,13 +58,14 @@ def parse_socket_output(filename, method='overlap'):
                     else:
                         start_res = int(temp[6].split('-')[0])
                         end_res = int(temp[6].split('-')[1].split(':')[0])
-                    helix_id = int(temp[4])
+                    helix_id = 'helix_{}'.format(int(temp[4]))
                     chain = line.split(':')[1]
                 except ValueError:
                     coil_info['ambigous'] = True
-                seq_line = lines[k+2].rstrip("\n")
-                register_line = lines[k+3].rstrip("\n")
-                knobtype_line = lines[k+5].rstrip("\n")
+                coil_info['helix_ids'].append(helix_id)
+                seq_line = lines[k + 2].rstrip("\n")
+                register_line = lines[k + 3].rstrip("\n")
+                knobtype_line = lines[k + 5].rstrip("\n")
                 seq = seq_line[9:]
                 if len(seq) != (end_res - start_res + 1):
                     coil_info['ambigous'] = True
@@ -85,9 +88,9 @@ def parse_socket_output(filename, method='overlap'):
                 end_res = end_res - right_marg
                 fseq = seq[left_marg:len(seq) - right_marg]
                 register = register[left_marg:len(seq) - right_marg].replace(' ', '-')
-                coil_info['heptads'].append(register)
-                coil_info['sequences'].append(fseq)
-                coil_info['indices'].append((helix_id, int(start_res), int(end_res), chain))
+                coil_info['heptads'][helix_id] = register
+                coil_info['sequences'][helix_id] = fseq
+                coil_info['indices'][helix_id] = {'start': int(start_res), 'end': int(end_res), 'chain': chain}
             if 'length max' in line and 'PRESENT' not in line and 'REPEATS' not in line:
                 inf = re.findall('\((.*?)\)', line)
                 data = inf[1].split(' ')
@@ -97,13 +100,13 @@ def parse_socket_output(filename, method='overlap'):
                 coil_info['orientation'] = orientation
             if line.startswith('	angle between helices'):
                 rel_data = line.split()
-                first_helix, second_helix, orientation = rel_data[3], rel_data[5], rel_data[8]
-                relations.append([first_helix, second_helix, orientation])
-        all_coils.append(coil_info)
+                first_helix, second_helix, orientation = 'helix_{}'.format(rel_data[3]), 'helix_{}'.format(rel_data[5]), rel_data[8]
+                coil_info['relations'].append([first_helix, second_helix, orientation])
+        all_coils[cc_id] = coil_info
     if not all_coils:
-        return 0
+        return {}
     else:
-        return all_coils, relations
+        return all_coils
 
 
 def check_socket_output(filename):
