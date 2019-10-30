@@ -1,7 +1,9 @@
 from plip.modules.preparation import PDBComplex
-import plip_output_parser as plip_parse
+from . import plip_output_parser as plip_parse
 import pandas as pd
-import pickle
+import pickle, tempfile, gzip, os
+from Bio.PDB import *
+from Bio.PDB.PDBExceptions import PDBConstructionException
 
 def convert_interaction_for_df(pdb, inter):
 	# in: interaction data
@@ -14,8 +16,16 @@ def convert_interaction_for_df(pdb, inter):
 	row = [pdb] + [ inter[d] for d in row_data ] + [inter_data]
 
 	return row
+	
+	
+def get_unzipped_tempfile(gz_fn):
+    f = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
+    fh = open(f.name, 'w')
+    fh.write(gzip.open(gz_fn, mode='rt').read())
+    fh.close()
+    return f.name
 
-def run_plip(pdb, pdb_db_path, dump=True, dumpdir=''):
+def run_plip(pdb, pdb_filepath, dump=True, dumpdir='', resdf=False):
 	# input: one pdb index, (list of sequences to check - maybe process from all data later)
 	# main: load pdb from path
 	# out: status of job, save results in file during function run
@@ -24,15 +34,49 @@ def run_plip(pdb, pdb_db_path, dump=True, dumpdir=''):
 	# out-format-alt: dataframe for pdb with ligands as rows and columns:
 	# restype_l, reschain_l, resnr_l, inter_type, restype, reschain, resnr, inter_data(maybe without already present columns)
 
-	if dimpdir!='' and dump:
+	if dumpdir!='' and dump:
 		assert dumpdir[-1]=='/', "dumpdir must end with '/'"
 
-	pdb_filepath        = pdb_db_path + pdb[1:3] + '/' + pdb + '.pdb1'
-	ligand_interactions = []
+	picklename = dumpdir + pdb + '.p'
 
+	if dump:
+		if os.path.isfile(picklename):
+			print('=> ' + pdb + ': in cache')
+			if resdf:
+				return pd.read_pickle(picklename)
+			else:
+				return True
+
+	# unzip if pdb is gzipped
+	if pdb_filepath[-3:] == '.gz':
+		try:
+			pdb_filepath=get_unzipped_tempfile(pdb_filepath)
+		except FileNotFoundError:
+			print('=> ' + pdb + ': Gz file not found')
+			return False			
+		gz=True
+	else:
+		gz=False	
+		
+	# first try to parse the structure with Bio.PDB
+	parser = PDBParser(PERMISSIVE=0)
+	try:
+		structure = parser.get_structure('temp', pdb_filepath)		
+	except PDBConstructionException:
+		print('=> ' + pdb + ': Problem with parsing')
+		return False
+		
+	# check the number of residues
+	res_count = sum([len(list(model.get_residues())) for model in structure])
+	
+	if res_count>=2500:
+		print('=> ' + pdb + ': The input molecule is too big (%d residues)' % res_count)
+		return False		
+
+	ligand_interactions = []
+	
 	# PLIP analysis
 	mol = PDBComplex()
-	# check if file present
 	try:
 		mol.load_pdb(pdb_filepath)
 	except:
@@ -40,8 +84,16 @@ def run_plip(pdb, pdb_db_path, dump=True, dumpdir=''):
 		return False
 	ligand_list_from_mol = [ x.hetid for x in mol.ligands ]
 	print('=> ' + pdb + ': ' + str(len(ligand_list_from_mol)) + ' ligands to process')
-	mol.analyze()
-
+	
+	if ligand_list_from_mol==0:
+		return False
+	
+	try:
+		mol.analyze()
+	except TypeError:
+		print('=> ' + pdb + ': Problem with parsing')
+		return False
+		
 	for bsid in [":".join([x.hetid, x.chain, str(x.position)]) for x in mol.ligands]:
 		# for every ligand encountered in pdb
 
@@ -54,5 +106,13 @@ def run_plip(pdb, pdb_db_path, dump=True, dumpdir=''):
 	df = pd.DataFrame(ligand_interactions, columns=['pdb', 'restype_l', 'reschain_l', 'resnr_l', 'inter_type',
 													'restype', 'reschain', 'resnr', 'inter_data'])
 	if dump:
-		pickle.dump(df, open(dumpdir+pdb + '.p', 'wb')) # dump df
-	return True
+		pickle.dump(df, open(picklename, 'wb')) # dump df
+		
+	if gz:
+		# del tempfile
+		os.remove(pdb_filepath)
+	
+	if resdf:
+		return df	
+	else:
+		return True
