@@ -99,14 +99,15 @@ def enc_seq_sizehydro(seq, pad_length=None, pad_left=0):
     return matrix
 
 
-def enc_pssm(pssm_file, pad_length=None, pad_left=0):
+def enc_pssm(pssm_file, pad_length=None, pad_left=0, skip_footer=5):
     """
     Encodes evolutionary information stored in PSSM file
     :param pssm_file: PSSM filename
     :param pad_length: zero padding length (assures equal length of variable length sequences)
+    :param skip_footer: PSSM footer may have different lengths
     :return: encoded PSSM
     """
-    pssm_matrix = sigmoid(np.genfromtxt(pssm_file, skip_header=3, skip_footer=5, usecols=(i for i in range(2, 22))))
+    pssm_matrix = sigmoid(np.genfromtxt(pssm_file, skip_header=3, skip_footer=skip_footer, usecols=(i for i in range(2, 22))))
     if pad_length:
         pad_matrix = np.zeros((pad_length, 20))
         pad_matrix[pad_left:pssm_matrix.shape[0]+pad_left, 0:pssm_matrix.shape[1]] = pssm_matrix

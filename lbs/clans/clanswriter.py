@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import sys, math
+import seaborn as sns
 
 #Then I used your scripts to compute the rmsds but for the RMSD->score scaling function, I used a sigmoid. I got the base form of a sigmoid from Wikipedia
 #1./(1 + numpy.exp(-value))
@@ -60,70 +61,86 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 <seq>
 """
 
-	def __init__(self, df, pickmin=True, cf=conversion_empty_function):
+	def __init__(self, df_links, df_desc, pickmin=True, cf=conversion_empty_function):
 		"""
-		df - a pandas df with id1, id2, value data
+		Args:
+			df_links: A Pandas DatFrame with id1, id2, value data
+			df_desc:  A Pandas DataFrame with id (index!), sequence, group data
+			pickmin:  In the case of redundant links (id1->id2 and id2->id1 present) the one
+					  with lowest (pickmin=True) or highest (pickmin=Flase) score will be 
+					  taken
+			cf:		  Function to apply to the scores *after* picking the best one (see above)
+			
 		"""
-		self.df = df
-		self.keys = list(set(df.id1.tolist() + df.id2.tolist()))
+		
+		self.df_desc = df_desc
+		
+		self.df_links = df_links
+		self.df_links[['id1', 'id2']] = self.df_links[['id1', 'id2']].astype(str)
+		
 		# for bi-directional hits pick the one with smallest/biggest value
-		self.df[['id1', 'id2']] = np.sort(self.df[['id1', 'id2']], axis=1)
+		self.df_links[['id1', 'id2']] = np.sort(self.df_links[['id1', 'id2']], axis=1)
 		
 		if pickmin:
-			self.links = self.df.loc[self.df.groupby(['id1','id2'])["score"].idxmin()]
+			self.links = self.df_links.loc[self.df_links.groupby(['id1','id2'])["score"].idxmin()]
 		else:
-			self.links = self.df.loc[self.df.groupby(['id1','id2'])["score"].idxmax()]
+			self.links = self.df_links.loc[self.df_links.groupby(['id1','id2'])["score"].idxmax()]
 			
-		self.links['score'] = self.links['score'].apply(cf)
-		self.links=self.links[['id1', 'id2', 'score']].values
+		self.keys = list(set(self.links.id1.tolist() + self.links.id2.tolist()))
+		
+		self.links['score'] = self.links['score'].apply(cf)		
+		self.links=self.links[['id1', 'id2', 'score']].values.astype(str)
 		
 		self.key2pos = {}
 		for pos, k in enumerate(self.keys):
 			self.key2pos[str(k)]=pos
 			
 	def write(self, outfile, groups=None):
+		"""
+		Writes stored edges as CLANS file
+		
+		"""
 		f = open(outfile, 'w')
 		f.write('sequences=%s\n' % len(self.keys))
 		f.write(self.header)
 
 		for k in self.keys:
-			f.write(">%s\n" % k)
-			f.write("X\n")
-			# FIXME!
+			tmp = self.df_desc.loc[int(k)]
+			f.write(">%s [%s]\n" % (tmp['name'], tmp['group']))
+			f.write("%s\n" % tmp.seq)
 
 		f.write("</seq>\n<hsp>\n")
 		for l in self.links:
-			#print(l)
 			f.write("%s %s:%s\n" % (self.key2pos[l[0]], self.key2pos[l[1]], l[2]))
 		f.write("</hsp>")
+		
+		# Add groups
+		nr_groups = self.df_desc.group.value_counts().shape[0]		
+		palette = sns.color_palette(None, nr_groups)
 
-		if groups != None:
-			pos=-1
-			for color, group in groups:
-				pos+=1
-				if len(group)==0: continue
-				cr, cg, cb = color
-							
-				f.write("""\n<seqgroups>
+		for g, color in zip(self.df_desc.groupby(by='group'), palette):
+		
+			g_ids = [str(self.key2pos[str(i)]) for i in g[1].index]
+		
+			f.write("""\n<seqgroups>
 name=%s
 type=%s
 size=6
 hide=0
 color=%s;%s;%s
 numbers=%s;
-</seqgroups>""" % (str(pos), 0, int(cr*255),int(cg*255),int(cb*255), ";".join([str(i) for i in group])))
-				
+</seqgroups>""" % (g[0], 
+				   0, 
+				   int(color[0]*255), 
+				   int(color[1]*255),
+				   int(color[2]*255), 
+				   ";".join(g_ids)
+				   ))
 		
 		f.close()
 		
 if __name__ == "__main__":
 	
-	# Let's prepare some data using BLAST
-	# makeblastdb -in PF00672_seed.txt -dbtype prot
-	# blastp -db PF00672_seed.txt -query PF00672_seed.txt -outfmt "6 qseqid sseqid evalue" -out PF00672_seed.BLAST.csv -num_threads 4
-
-	df = pd.read_csv(sys.argv[1], sep='\t', names=['id1', 'id2', 'score'])
-	#df = df[df.evalue <= 1e-3]
-	cw = clanswriter(df)
-	cw.write('temp.clans')
+	pass
+	
 
