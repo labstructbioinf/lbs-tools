@@ -10,63 +10,63 @@ class cdhit:
 		self.cpus=cpus
 	
 	def run(self, identity=0.9):
-			assert identity>=0.4 and identity<=1.0
-			# define word length
-			
-			if identity>0.7:
-				word=5
-			elif identity>0.6:
-				word=4
-			elif identity>0.5:
-				word=3
-			else:
-				word=2
-			
-			print ('Word lendth set to', word)	
-	
-			# prepare input fasta file
-			inf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
-			maxdesclen = 0
-			for s in self.sequences:
-				ident = s.id
-				assert ident.find('...')==-1 and ident.find('>')==-1, 'invalid sequence name'
-				maxdesclen = max([maxdesclen, len(ident)])
-				inf.write(s.format('fasta'))
-			inf.close()
-			
-			print ('Maximal description length', maxdesclen)
+		assert identity>=0.4 and identity<=1.0
+		# define word length
 		
-			# prepare empty output file
-			outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
-			outf.close()
+		if identity>0.7:
+			word=5
+		elif identity>0.6:
+			word=4
+		elif identity>0.5:
+			word=3
+		else:
+			word=2
 		
-			cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen, self.cpus,
-													          identity, word)
-		
-			status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			
-			assert status==0, 'non-clean exit from cdhit. check in %s and out %s files' % (inf.name, outf.name)
-			os.remove(inf.name)
-			
-			# parse fasta results
-			self.results_fasta = list(SeqIO.parse(outf.name, 'fasta'))
-			os.remove(outf.name)
-			
-			# parse cluster assignments
-			self.results_clusters={}
-			for l in open(outf.name + '.clstr'):
-				if l[0]=='>':
-					cluster = int(l[8:-1])
-				else:
-					ident = l[l.find('>')+1:l.find('...')]
-					if not cluster in self.results_clusters:
-						self.results_clusters[cluster]=[ident]
-					else:
-						self.results_clusters[cluster].append(ident)
-					
-			os.remove(outf.name + '.clstr')			
+		print ('Word lendth set to', word)	
 
+		# prepare input fasta file
+		inf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
+		maxdesclen = 0
+		for s in self.sequences:
+			ident = s.id
+			assert ident.find('...')==-1 and ident.find('>')==-1, 'invalid sequence name'
+			maxdesclen = max([maxdesclen, len(ident)])
+			inf.write(s.format('fasta'))
+		inf.close()
 		
+		print ('Maximal description length', maxdesclen)
+	
+		# prepare empty output file
+		outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
+		outf.close()
+	
+		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen, self.cpus,
+														  identity, word)
+	
+		status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		
+		assert status==0, 'non-clean exit from cdhit. check in %s and out %s files' % (inf.name, outf.name)
+		os.remove(inf.name)
+		
+		# parse fasta results
+		self.results_fasta = list(SeqIO.parse(outf.name, 'fasta'))
+		os.remove(outf.name)
+		
+		# parse cluster assignments
+		self.results_clusters={}
+		for l in open(outf.name + '.clstr'):
+			if l[0]=='>':
+				cluster = int(l[8:-1])
+			else:
+				ident = l[l.find('>')+1:l.find('...')]
+				if not cluster in self.results_clusters:
+					self.results_clusters[cluster]=[ident]
+				else:
+					self.results_clusters[cluster].append(ident)
+				
+		os.remove(outf.name + '.clstr')			
+
+	
 		
 		
 	
