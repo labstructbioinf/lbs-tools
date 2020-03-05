@@ -1,2 +1,0 @@
-from .PDB import PDB
-
