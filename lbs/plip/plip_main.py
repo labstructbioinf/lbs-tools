@@ -25,7 +25,7 @@ def get_unzipped_tempfile(gz_fn):
     fh.close()
     return f.name
 
-def run_plip(pdb, pdb_filepath, dump=True, dumpdir='', resdf=False):
+def run_plip(pdb, pdb_filepath, dump=True, dumpdir='', resdf=False, max_res_count=4000):
 	# input: one pdb index, (list of sequences to check - maybe process from all data later)
 	# main: load pdb from path
 	# out: status of job, save results in file during function run
@@ -69,7 +69,7 @@ def run_plip(pdb, pdb_filepath, dump=True, dumpdir='', resdf=False):
 	# check the number of residues
 	res_count = sum([len(list(model.get_residues())) for model in structure])
 	
-	if res_count>=2500:
+	if res_count>=max_res_count:
 		print('=> ' + pdb + ': The input molecule is too big (%d residues)' % res_count)
 		return False		
 

@@ -24,12 +24,16 @@ class cdhit:
 		
 		print ('Word lendth set to', word)	
 
+		temp_idents = []
+
 		# prepare input fasta file
 		inf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
 		maxdesclen = 0
 		for s in self.sequences:
 			ident = s.id
 			assert ident.find('...')==-1 and ident.find('>')==-1, 'invalid sequence name'
+			assert ident not in temp_idents, 'duplicate seq ids'
+			temp_idents.append(ident)
 			maxdesclen = max([maxdesclen, len(ident)])
 			inf.write(s.format('fasta'))
 		inf.close()
@@ -40,12 +44,13 @@ class cdhit:
 		outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
 		outf.close()
 	
-		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen, self.cpus,
+		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
 														  identity, word)
 	
 		status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
 		assert status==0, 'non-clean exit from cdhit. check in %s and out %s files' % (inf.name, outf.name)
+		
 		os.remove(inf.name)
 		
 		# parse fasta results
@@ -53,18 +58,20 @@ class cdhit:
 		os.remove(outf.name)
 		
 		# parse cluster assignments
-		self.results_clusters={}
+		results_clusters={}
 		for l in open(outf.name + '.clstr'):
 			if l[0]=='>':
 				cluster = int(l[8:-1])
 			else:
 				ident = l[l.find('>')+1:l.find('...')]
-				if not cluster in self.results_clusters:
-					self.results_clusters[cluster]=[ident]
+				if not cluster in results_clusters:
+					results_clusters[cluster]=[ident]
 				else:
-					self.results_clusters[cluster].append(ident)
+					results_clusters[cluster].append(ident)
 				
-		os.remove(outf.name + '.clstr')			
+		os.remove(outf.name + '.clstr')	
+		
+		return results_clusters		
 
 	
 		

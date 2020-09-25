@@ -45,15 +45,15 @@ def blastofas(xmlfile, queryFasta, evalue=1e-3, iternr = -1, maxgaps=0.25):
 			new_fasta.append(seq)
 	return new_fasta
     
-def blastofasComplete(xmlfile, queryFasta, maxevalue=1e-3, 
-					  minnormident=0, iternr = -1, maxgaps=0.25):
+def blastofasComplete(xmlfile, queryFasta, maxevalue=1e-3, min_ident=0, min_coverage=0, iternr = -1):
 	"""
 	:param str xmlfile: input xml file from blast or psiblast
 	:param str queryFasta: query sequence (fasta file)
 	:param float maxevalue: max e-value of hsp
-	:param float minnormident: min (normalized to account for the coverage) sequence identity in hsp
+	:param float min_ident: min sequence identity in hsp (0 to 1)
+	:param float min_coverage: min hit coverage of the query (0 to 1)
 	:param int iternr: number of psiblast iteration to parse (-1 = last)
-	:param float maxgaps: used only if mask=True. maximal fraction of gaps in a sequence
+
 	"""
 
 	queryseq = next(SeqIO.parse(open(queryFasta, 'r'), "fasta"))
@@ -64,13 +64,13 @@ def blastofasComplete(xmlfile, queryFasta, maxevalue=1e-3,
 	masterquery = str(queryseq)
 	fasta.append(queryseq)
 
-
 	for alignment in b_record.alignments:
 		for hsp in alignment.hsps:
 								
-			norm_seq_ident = float(hsp.identities) / len(queryseq)
-
-			if hsp.expect <= float(maxevalue) and norm_seq_ident >= minnormident:
+			seq_ident = float(hsp.identities) / len(queryseq)			
+			seq_coverage = 1.*len(hsp.sbjct.replace('-', '')) / len(queryseq)
+			
+			if hsp.expect <= float(maxevalue) and seq_ident >= min_ident and seq_coverage >= min_coverage:
 			
 				temp = ''
 				hsp.sbjct = "-"*(hsp.query_start-1) + hsp.sbjct

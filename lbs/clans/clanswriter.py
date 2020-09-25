@@ -40,7 +40,7 @@ repfactor=10.0
 repvalpow=1
 dampening=1.0
 minattract=1.0
-cluster2d=false
+cluster2d=true
 blastpath=X
 formatdbpath=X
 showinfo=false
@@ -73,9 +73,12 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 			
 		"""
 		
-		self.df_desc = df_desc
+		assert df_desc.index.is_unique
 		
-		self.df_links = df_links
+		self.df_desc = df_desc.copy()
+		self.df_desc.index = df_desc.index.map(str)
+		
+		self.df_links = df_links.copy()
 		self.df_links[['id1', 'id2']] = self.df_links[['id1', 'id2']].astype(str)
 		
 		# for bi-directional hits pick the one with smallest/biggest value
@@ -86,16 +89,22 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		else:
 			self.links = self.df_links.loc[self.df_links.groupby(['id1','id2'])["score"].idxmax()]
 			
-		self.keys = list(set(self.links.id1.tolist() + self.links.id2.tolist()))
+		#self.keys = list(set(self.links.id1.tolist() + self.links.id2.tolist()))
+		#assert len(set(self.keys) - set(self.df_desc.index.tolist()))==0
+		
+		self.keys = self.df_desc.index.tolist()
+		assert set(self.links.id1.tolist() + self.links.id2.tolist()) <= set(self.keys)
 		
 		self.links['score'] = self.links['score'].apply(cf)		
 		self.links=self.links[['id1', 'id2', 'score']].values.astype(str)
 		
 		self.key2pos = {}
 		for pos, k in enumerate(self.keys):
-			self.key2pos[str(k)]=pos
+			self.key2pos[k]=pos
 			
-	def write(self, outfile, groups=None):
+
+			
+	def write(self, outfile, min_group_size=1, color_palette='hot', sort_key=str, sort_reverse=False):
 		"""
 		Writes stored edges as CLANS file
 		
@@ -105,8 +114,8 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		f.write(self.header)
 
 		for k in self.keys:
-			tmp = self.df_desc.loc[int(k)]
-			f.write(">%s [%s]\n" % (tmp['name'], tmp['group']))
+			tmp = self.df_desc.loc[k]
+			f.write(">%s {%s} [%s]\n" % (tmp['name'], tmp['full_name'], tmp['group']))
 			f.write("%s\n" % tmp.seq)
 
 		f.write("</seq>\n<hsp>\n")
@@ -116,13 +125,17 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		
 		# Add groups
 		nr_groups = self.df_desc.group.value_counts().shape[0]		
-		palette = sns.color_palette(None, nr_groups)
+		palette = sns.color_palette(color_palette, nr_groups)
+
+		groupid2seqgroup = {}
 
 		for g, color in zip(self.df_desc.groupby(by='group'), palette):
 		
-			g_ids = [str(self.key2pos[str(i)]) for i in g[1].index]
+			g_ids = [str(self.key2pos[i]) for i in g[1].index]
+			assert len(g_ids)>0
+			if len(g_ids) < min_group_size: continue
 		
-			f.write("""\n<seqgroups>
+			groupid2seqgroup[g[0]] = """\n<seqgroups>
 name=%s
 type=%s
 size=6
@@ -135,7 +148,10 @@ numbers=%s;
 				   int(color[1]*255),
 				   int(color[2]*255), 
 				   ";".join(g_ids)
-				   ))
+				   )
+				   		
+		for g in sorted(list(groupid2seqgroup.keys()), key=sort_key, reverse=sort_reverse):
+			f.write(groupid2seqgroup[g])
 		
 		f.close()
 		

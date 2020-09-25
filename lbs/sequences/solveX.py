@@ -50,3 +50,5 @@ def solveX(small_seq, big_seq, can_be_X = 'MCKH'):
 			return -1, small_seq
 	else:
 		return big_seq.find(small_seq), small_seq 
+		
+		
