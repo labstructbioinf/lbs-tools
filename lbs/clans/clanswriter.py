@@ -1,6 +1,7 @@
+import sys, math
 import numpy as np
 import pandas as pd
-import sys, math
+from sklearn import preprocessing
 import seaborn as sns
 
 #Then I used your scripts to compute the rmsds but for the RMSD->score scaling function, I used a sigmoid. I got the base form of a sigmoid from Wikipedia
@@ -108,6 +109,9 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		"""
 		Writes stored edges as CLANS file
 		
+		
+		sort_key and sort_reverse: 
+		
 		"""
 		f = open(outfile, 'w')
 		f.write('sequences=%s\n' % len(self.keys))
@@ -124,25 +128,33 @@ colorarr=(230;230;230):(207;207;207):(184;184;184):(161;161;161):(138;138;138):(
 		f.write("</hsp>")
 		
 		# Add groups
-		nr_groups = self.df_desc.group.value_counts().shape[0]		
-		palette = sns.color_palette(color_palette, nr_groups)
+		groups = self.df_desc.group.unique().tolist()
+		sorted_groups = sorted(groups, key=sort_key, reverse=sort_reverse)
+		
+		print('groups order', sorted_groups)
+		
+		#nr_groups = self.df_desc.group.value_counts().shape[0]		
+		palette = sns.color_palette(color_palette, len(groups))
 
 		groupid2seqgroup = {}
 
-		for g, color in zip(self.df_desc.groupby(by='group'), palette):
+		#for g, color in zip(self.df_desc.groupby(by='group'), palette):
 		
-			g_ids = [str(self.key2pos[i]) for i in g[1].index]
+		for g_pos, g_name in enumerate(sorted_groups):
+		
+			color = palette[g_pos]	
+			g_ids = [str(self.key2pos[i]) for i in self.df_desc[self.df_desc.group==g_name].index]
 			assert len(g_ids)>0
 			if len(g_ids) < min_group_size: continue
 		
-			groupid2seqgroup[g[0]] = """\n<seqgroups>
+			groupid2seqgroup[g_name] = """\n<seqgroups>
 name=%s
 type=%s
 size=6
 hide=0
 color=%s;%s;%s
 numbers=%s;
-</seqgroups>""" % (g[0], 
+</seqgroups>""" % (g_name, 
 				   0, 
 				   int(color[0]*255), 
 				   int(color[1]*255),
@@ -150,10 +162,94 @@ numbers=%s;
 				   ";".join(g_ids)
 				   )
 				   		
-		for g in sorted(list(groupid2seqgroup.keys()), key=sort_key, reverse=sort_reverse):
+		for g in sorted_groups:
 			f.write(groupid2seqgroup[g])
 		
 		f.close()
+		
+def gen_df_desc(df_links, cores, group_label="", full_name_label=""):
+    
+    # create desc df and fill with sequences
+    ids = list(set(df_links.id1.tolist() + df_links.id2.tolist()))
+    df_desc = pd.DataFrame(ids, columns=['id'])
+    df_desc.set_index(df_desc.id, inplace=True)
+    df_desc['seq'] = df_desc.index.map(lambda x:cores.iloc[x]['sequence'])
+
+    
+    def f(x):
+        #d = preds.loc[cores.iloc[x].ecod][['pdb_chain', 'x_name', 'h_name', 't_name', 'f_name', 'source']] # , 'maxscore_bin'
+        
+        d = cores.iloc[x]
+        
+        # Define groups based on ECOD
+        return pd.Series({"name":f'{d.name}_{d.pdb_chain}', 
+                          "group": d[group_label],
+                          "full_name":d[full_name_label]})
+    
+        # Define groups based on bined scores
+        #return pd.Series({"name":d.pdb_chain, "group":d.maxscore_bin})
+
+    df_desc=df_desc.merge(df_desc.id.apply(lambda x:f(x)), left_index=True, right_index=True)
+    df_desc=df_desc.drop(['id'], axis=1)
+    return df_desc
+    
+    
+		
+def matrix2clans(matrix, data, percentile=75, group_label="", full_name_label=""):
+
+	"""
+	
+	Args:
+		matrix:     similarity matrix (0 to 1)
+		percentile: percentile of the best scores to consider
+	
+	"""
+
+	tril = np.tril_indices(matrix.shape[0])
+	tril_array = np.column_stack(tril)
+
+	CUT_OFF = np.percentile(matrix[tril], percentile)
+	print('CUT_OFF', CUT_OFF)
+	tril_array_best = tril_array[matrix[tril]  >= CUT_OFF,:]
+	tril_array_best_tup = (tril_array_best[:,0], tril_array_best[:,1])
+		
+	min_max_scaler = preprocessing.MinMaxScaler()
+
+	# Add and scale scores
+	df_links = pd.DataFrame(matrix[tril_array_best_tup], columns=['score_raw'])
+	df_links['score'] = min_max_scaler.fit_transform(df_links['score_raw'].to_numpy().reshape(-1, 1))
+	# Add hits 
+	df_links = pd.concat([df_links, pd.DataFrame(tril_array_best, columns=['id1', 'id2'])], axis=1)
+	# Remove self-hits
+	df_links=df_links[df_links.id1!=df_links.id2]
+
+	df_desc = gen_df_desc(df_links, data, group_label=group_label, full_name_label=full_name_label)
+
+	return df_links, df_desc 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+		
 		
 if __name__ == "__main__":
 	

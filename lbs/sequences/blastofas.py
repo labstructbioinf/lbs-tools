@@ -1,6 +1,6 @@
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
-from Bio.Alphabet import IUPAC
+#from Bio.Alphabet import IUPAC
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 import numpy as np
@@ -33,7 +33,7 @@ def blastofas(xmlfile, queryFasta, evalue=1e-3, iternr = -1, maxgaps=0.25):
 			for hsp in alignment.hsps:
 				if hsp.expect <= float(evalue):
 					corr_seq = __correct_alignment(query_seq, hsp)
-					seq = Seq(corr_seq, IUPAC.protein)
+					seq = Seq(corr_seq)#, IUPAC.protein)
 					fasta.append(SeqRecord(seq, id=alignment.title, description=""))
 	mat = np.array([list(seq.seq) for seq in fasta])
 	mat = mat[:, ~(mat[0] == '-')]
@@ -96,7 +96,7 @@ def blastofasComplete(xmlfile, queryFasta, maxevalue=1e-3, min_ident=0, min_cove
 					
 						mpos = mpos + 1
 					
-				simple_seq = Seq(temp, IUPAC.protein)
+				simple_seq = Seq(temp) #, IUPAC.protein)
 
 				fasta_rec = SeqRecord(simple_seq, id=alignment.title, description="")
 				

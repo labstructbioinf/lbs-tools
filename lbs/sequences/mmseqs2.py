@@ -12,13 +12,13 @@ class MMSeqsClusterer:
 		self.mmseqs_loc = mmseqs_loc
 		self.tmp_dir = tmp_dir
 	
-	def cluster(self, df, max_identity=0.25, coverage=0.5, cov_mode=0, cluster_mode=0):
+	def cluster(self, df, min_identity=0.25, coverage=0.5, cov_mode=0, cluster_mode=0):
 		"""
 		Cluster sequences in the pandas DataFrame ('sequence' column) with MMSeqs2
 		Manual at https://github.com/soedinglab/mmseqs2/wiki
 		
 		:param df: DataFrame storing protein sequences ('sequence' column)
-		:param max_identity: maximum identity [0, 1]
+		:param min_identity: minimum identity [0, 1]
 		:param coverage: minimum alignment coverage [0, 1]
 		:param cov_mode: coverage mode [0-3]
 		:param cluster_mode: cluster mode [0-2]
@@ -33,7 +33,7 @@ class MMSeqsClusterer:
 			for id, data in df.iterrows():
 				f.write('>{}\n{}\n'.format(id, data['sequence']))
 
-		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {max_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode}'
+		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode}'
 																			 
 		status = os.system(cmd)
 		if status != 0:
