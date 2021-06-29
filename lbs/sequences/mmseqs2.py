@@ -20,7 +20,7 @@ class MMSeqsClusterer:
 		:param df: DataFrame storing protein sequences ('sequence' column)
 		:param min_identity: minimum identity [0, 1]
 		:param coverage: minimum alignment coverage [0, 1]
-		:param cov_mode: coverage mode [0-3]
+		:param cov_mode: coverage mode [0-3] (0 coverage mode should be used to cluster full length protein sequences)
 		:param cluster_mode: cluster mode [0-2]
 		:return: updated DataFrame containing 'clust_id' column denoting the cluster each sequence was assigned to
 				 (note that the cluster name denotes its representative sequence's id)

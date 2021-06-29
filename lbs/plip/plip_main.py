@@ -59,19 +59,19 @@ def run_plip(pdb, pdb_filepath, dump=True, dumpdir='', resdf=False, max_res_coun
 		gz=False	
 		
 	# first try to parse the structure with Bio.PDB
-	parser = PDBParser(PERMISSIVE=0)
-	try:
-		structure = parser.get_structure('temp', pdb_filepath)		
-	except PDBConstructionException:
-		print('=> ' + pdb + ': Problem with parsing')
-		return False
+	#parser = PDBParser(PERMISSIVE=0)
+	#try:
+	#structure = parser.get_structure('temp', pdb_filepath)		
+	#except PDBConstructionException:
+	#	print('=> ' + pdb + ': Problem with parsing')
+	#	return False
 		
 	# check the number of residues
-	res_count = sum([len(list(model.get_residues())) for model in structure])
+	#res_count = sum([len(list(model.get_residues())) for model in structure])
 	
-	if res_count>=max_res_count:
-		print('=> ' + pdb + ': The input molecule is too big (%d residues)' % res_count)
-		return False		
+	#if res_count>=max_res_count:
+	#	print('=> ' + pdb + ': The input molecule is too big (%d residues)' % res_count)
+	#	return False		
 
 	ligand_interactions = []
 	
