@@ -1,4 +1,10 @@
 def parse_pdb_ranges(pdb_ranges):
+	"""
+		parses ecod domain pdb_ranges such as
+			A:4,A:6-188
+			A:474-512,A:603-675
+			etc.
+	"""
     
     for pdb_range in pdb_ranges.split(','):
         tmp = pdb_range.split(":")[1]
@@ -15,7 +21,10 @@ def parse_pdb_ranges(pdb_ranges):
         else:
             minus_end = False
             
-        ecod_start, ecod_end = tmp.split("-")
+        if tmp.find('-') != -1:
+        	ecod_start, ecod_end = tmp.split("-")
+		else:
+			ecod_start = ecod_end = tmp
 
         if minus_start:
             ecod_start = '-' + ecod_start
