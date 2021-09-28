@@ -3,8 +3,9 @@ from Bio import Entrez, SeqIO
 import numpy as np
 
 Entrez.email = "s.dunin-horkawicz@cent.uw.edu.pl"
+Entrez.tool = "lbs-tools"
 
-def getseqs(accessions, chunksize=1000, format='fasta'):
+def getseqs(accessions, chunksize=1000, format='fasta', db='protein'):
 	"""
 	Download protein sequences from NCBI
 	
@@ -22,6 +23,7 @@ def getseqs(accessions, chunksize=1000, format='fasta'):
 	"""
 
 	assert format in ['fasta', 'gb']
+	assert db in ['protein', 'gene']
 
 	accessions = np.array(accessions)
 
@@ -31,10 +33,12 @@ def getseqs(accessions, chunksize=1000, format='fasta'):
 		
 	for gis_sub in l:
 
-		search_results = Entrez.read(Entrez.epost("protein", id=",".join(gis_sub)))
+		search_results = Entrez.read(
+			Entrez.epost(db, id=",".join(gis_sub))
+			)
 		webenv = search_results["WebEnv"]
 		query_key = search_results["QueryKey"] 
-		fetch_handle = Entrez.efetch(db="protein", rettype=format, webenv=webenv, query_key=query_key)	
+		fetch_handle = Entrez.efetch(db=db, rettype=format, webenv=webenv, query_key=query_key)	
 	
 		if format=='fasta':
 			res = list(SeqIO.FastaIO.FastaIterator(fetch_handle))
