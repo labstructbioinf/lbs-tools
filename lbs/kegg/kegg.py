@@ -18,9 +18,9 @@ def get_organisms():
 	return organisms
 
 @memoized.cache
-def get_pathways():
-	pathways = REST.kegg_list('pathway').read()
-	pathways = [i.split('\t') for i in pathways.split('\n')]
+def get_pathways(organism):
+	pathways = REST.kegg_list('pathway', organism).read()
+	pathways = [i.split('\t')[0] for i in pathways.split('\n')]
 	return pathways
 
 @memoized.cache
@@ -38,8 +38,8 @@ def get_genes(ko):
 @memoized.cache	
 def get_seq(gene):
     seq = REST.kegg_get(gene, 'aaseq').read()
-    seq = list(seq.split('\n'))
-    seq = ''.join(seq[1:-1])
+    # seq = list(seq.split('\n'))
+    # seq = ''.join(seq[1:-1])
     return seq
 
 
