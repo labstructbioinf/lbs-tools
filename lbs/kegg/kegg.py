@@ -44,18 +44,18 @@ def get_seq(gene):
     # seq = ''.join(seq[1:-1])
     return seq
 
-@memoized.cache
-def get_chunks_of_genes(df):
-	all_genes_from_df = []
-	for org, data in df.iterrows():
-		temp = list(chain(*data))
-		temp = [org + ":" + i for i in temp]
-		all_genes_from_df.extend(temp)
-	all_genes_from_df = np.array_split(all_genes_from_df, max(len(all_genes_from_df)/8, 1))
-	# Converting np.arrays to lists
-	for i in range(len(all_genes_from_df)):
-		all_genes_from_df[i] = list(all_genes_from_df[i])
-	return all_genes_from_df
+# @memoized.cache
+# def get_chunks_of_genes(df):
+# 	all_genes_from_df = []
+# 	for org, data in df.iterrows():
+# 		temp = list(chain(*data))
+# 		temp = [org + ":" + i for i in temp]
+# 		all_genes_from_df.extend(temp)
+# 	all_genes_from_df = np.array_split(all_genes_from_df, max(len(all_genes_from_df)/8, 1))
+# 	# Converting np.arrays to lists
+# 	for i in range(len(all_genes_from_df)):
+# 		all_genes_from_df[i] = list(all_genes_from_df[i])
+# 	return all_genes_from_df
 
 @memoized.cache
 def genes_to_sequences(list_of_genes):
