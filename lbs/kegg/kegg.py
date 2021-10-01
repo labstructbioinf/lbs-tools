@@ -3,6 +3,8 @@ sys.path.append('..')
 from utils import memoized
 from inspect import getmembers, isfunction
 from Bio.KEGG import REST
+from itertools import chain
+import numpy as np
 
 def fix(i):
     assert isinstance(i, list)
@@ -42,6 +44,26 @@ def get_seq(gene):
     # seq = ''.join(seq[1:-1])
     return seq
 
+@memoized.cache
+def get_chunks_of_genes(df):
+	all_genes_from_df = []
+	for org, data in df.iterrows():
+		temp = list(chain(*data))
+		temp = [org + ":" + i for i in temp]
+		all_genes_from_df.extend(temp)
+	all_genes_from_df = np.array_split(all_genes_from_df, max(len(all_genes_from_df)/8, 1))
+	# Converting np.arrays to lists
+	for i in range(len(all_genes_from_df)):
+		all_genes_from_df[i] = list(all_genes_from_df[i])
+	return all_genes_from_df
+
+@memoized.cache
+def genes_to_sequences(list_of_genes):
+    genes_and_sequences = {}
+    seqs = get_seq(list_of_genes).split('>')
+    seqs = [seq.split('(A)')[1].replace('\n', '') for seq in seqs[1:]]
+    genes_and_sequences = dict(zip(list_of_genes, seqs))
+    return genes_and_sequences
 
 
 def configure(cachedir='/tmp', verbose=False):
