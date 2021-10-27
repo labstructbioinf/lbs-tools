@@ -5,6 +5,7 @@ from inspect import getmembers, isfunction
 from Bio.KEGG import REST
 from itertools import chain
 import numpy as np
+from tqdm import tqdm_notebook as tqdm
 
 def fix(i):
     assert isinstance(i, list)
@@ -65,7 +66,6 @@ def genes_to_sequences(list_of_genes):
     genes_and_sequences = dict(zip(list_of_genes, seqs))
     return genes_and_sequences
 
-
 def configure(cachedir='/tmp', verbose=False):
 	for f in dir(sys.modules[__name__]):
 
@@ -73,3 +73,13 @@ def configure(cachedir='/tmp', verbose=False):
 			exec(f+".cachedir = cachedir")
 			exec(f+".verb = verbose")
 			print(f'function {f} has been configured')
+
+# creating a dict of all gene:sequence pairs
+@memoized.cache
+def generate_dict(all_chunks_of_genes):
+	seqs_for_prediction = {}
+	for chunk in tqdm(all_chunks_of_genes, bar_format='{percentage:3.0f}%  paths downloaded: {n_fmt}/{total_fmt}'):
+		print(chunk)
+		if len(chunk) > 0 and len(chunk) < 10:
+			seqs_for_prediction.update(genes_to_sequences(chunk))
+	return seqs_for_prediction
