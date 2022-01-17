@@ -17,9 +17,6 @@ def removeTruncated(filename, outfilename, lrange, lfraction, rrange, rfraction,
 		
 		lg = gapfraction(l)
 		rg = gapfraction(r)
-
-		
-		
 		
 		if lg <= lfraction and rg <= rfraction:
 			of.write(s.format(format))
