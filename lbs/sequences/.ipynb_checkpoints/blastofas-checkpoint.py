@@ -7,6 +7,7 @@ import numpy as np
 import argparse
 import re
 
+
 def __correct_alignment(master_query, hsp):
     if '-' in hsp.query: # insertions
         indices = [match.start() for match in re.finditer('-', hsp.query)]
@@ -17,6 +18,7 @@ def __correct_alignment(master_query, hsp):
         new_sbjct = "-"*starts[0][0] + hsp.sbjct+ "-"*(len(master_query)-starts[0][1])
     assert len(new_sbjct) == len(master_query)
     return new_sbjct
+
 
 def blastofas(xmlfile, queryFasta, evalue=1e-3, iternr = -1, maxgaps=0.25):
 	"""
