@@ -7,6 +7,7 @@ import numpy as np
 import argparse
 import re
 
+
 def __correct_alignment(master_query, hsp):
     if '-' in hsp.query: # insertions
         indices = [match.start() for match in re.finditer('-', hsp.query)]

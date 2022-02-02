@@ -21,3 +21,19 @@ run_psiblast(path_psiblast: str, #path to psiblast directory
              fasta_file: str, #input .fasta file
              max_target_seqs: int =2, dbtype: str ='prot')
 ```
+
+## md
+
+```python
+from lbs.md import Params, OpenMM
+
+params = Params() # MD params object
+path_pdb = 'example.pdb'
+
+mm = OpenMM(params)
+mm.prepare_components() # initialize force field and langevin integrator
+pdb = mm.prepare_pdb(path_pdb) # fix pdb issues & add solvent
+
+df = mm.run(pdb, 'result.pdb') # run simulation store structure in 'result.pdb'
+                               # df - energy etc. over time
+```
