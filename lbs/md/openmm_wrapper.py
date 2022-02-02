@@ -3,6 +3,7 @@ from typing import NamedTuple, Tuple
 from tempfile import TemporaryFile
 
 import pandas as pd
+import numpy as np
 from openmm.app import ForceField, Modeller, Topology
 from openmm.app.simulation import Simulation
 from openmm.openmm import LangevinMiddleIntegrator
@@ -45,6 +46,9 @@ class OpenMM:
         # load pdb file
         pdb_tmp = PDBFile(path_pdb)
         # feed it into Modeller and add missing atoms
+        # quasi centering
+        positions_arr = pdb_tmp.getPositions(True)
+        positions_arr - np.min(positions_arr, axis=0)
         modeller = Modeller(pdb_tmp.topology, pdb_tmp.positions)
         _ = modeller.addHydrogens(self.forcefield)
         modeller.addSolvent(self.forcefield, boxSize=Vec3(*self.params.boxSize)*nanometer)
