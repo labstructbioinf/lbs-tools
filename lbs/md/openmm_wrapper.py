@@ -33,7 +33,7 @@ class OpenMM:
     https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#nan
     '''
     def __init__(self, params: Params):
-        self.params = Params
+        self.params = params
 
     def prepare_pdb(self, path_pdb: str):
         '''
