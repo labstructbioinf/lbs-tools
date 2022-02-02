@@ -18,7 +18,7 @@ def __correct_alignment(master_query, hsp):
     assert len(new_sbjct) == len(master_query)
     return new_sbjct
 
-def blastofas(xmlfile, queryFasta, evalue=1e-3, iternr = -1, maxgaps=0.25):
+def blastofas(xmlfile, queryFasta, maxevalue=1e-3, iternr = -1, maxgaps=0.25):
 	"""
 	generates MSA based on XML PSI-BLAST results
 	Important note: gaps in the query sequence are collapsed, thus
@@ -101,6 +101,7 @@ def blastofasComplete(xmlfile, queryFasta, maxevalue=1e-3, min_ident=0, min_cove
 				fasta_rec = SeqRecord(simple_seq, id=alignment.title, description="")
 				
 				fasta.append(fasta_rec)
+			break
 
 
 	# uzupelnienie sekwencji na N koncu
@@ -140,16 +141,22 @@ if __name__ == "__main__":
     parser.add_argument('-fastmode',
 		                help='Use fast mode',
 		                default=False,
-		                action='store_true')                        
+		                action='store_true')  
+    parser.add_argument('-min_coverage',
+		                help='Min query coverage',
+		                metavar='min_coverage',
+		                default=0.75,
+                        type=float)	                
+		                
+	        
                                             
     args = parser.parse_args()
     
     if args.fastmode:
-    	func = blastofas
+    	fasta = blastofas(args.xml, args.query, maxevalue=args.evalue, iternr=args.iternr, maxgaps=args.maxgaps)
     else:
-    	func = blastofasComplete
-    
-    fasta = func(args.xml, args.query, evalue=args.evalue, iternr=args.iternr, maxgaps=args.maxgaps)
+    	fasta = blastofasComplete(args.xml, args.query, maxevalue=args.evalue, iternr=args.iternr, min_coverage=args.min_coverage)
+     
     for f in fasta:
         print(f.format('fasta'))
 
