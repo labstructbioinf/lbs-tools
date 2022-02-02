@@ -25,8 +25,8 @@ class Params:
     frictionCoeff: float = 1 # 1/picosecond
     stepSize: float = 0.002 # picosecond
     numSteps: int = 10000
-
-
+        
+        
 class OpenMM:
     '''
     OpenMM FAQ
