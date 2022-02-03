@@ -49,7 +49,7 @@ class OpenMM:
         # quasi centering
         positions_arr = pdb_tmp.getPositions(True)
         positions_arr - np.min(positions_arr, axis=0)
-        modeller = Modeller(pdb_tmp.topology, pdb_tmp.positions)
+        modeller = Modeller(pdb_tmp.topology, positions_arr)
         _ = modeller.addHydrogens(self.forcefield)
         modeller.addSolvent(self.forcefield, boxSize=Vec3(*self.params.boxSize)*nanometer)
         return modeller
