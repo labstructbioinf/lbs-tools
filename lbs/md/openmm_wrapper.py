@@ -48,7 +48,7 @@ class OpenMM:
         # feed it into Modeller and add missing atoms
         # quasi centering
         positions_arr = pdb_tmp.getPositions(True)
-        positions_arr - np.min(positions_arr, axis=0)
+        positions_arr = positions_arr - np.min(positions_arr, axis=0)
         modeller = Modeller(pdb_tmp.topology, positions_arr)
         _ = modeller.addHydrogens(self.forcefield)
         modeller.addSolvent(self.forcefield, boxSize=Vec3(*self.params.boxSize)*nanometer)
