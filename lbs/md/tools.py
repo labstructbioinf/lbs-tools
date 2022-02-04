@@ -47,7 +47,7 @@ def parse_xyz(path: Union[str, atomium.structures.Model],
     
     
 
-def calculate_box_size(path: str, factor: int = 2) -> Tuple[float]:
+def calculate_box_size(path: str, factor: int = 1.5) -> Tuple[float]:
     '''
     calculate box size for given structure
     factor defines box width with formula 

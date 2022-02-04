@@ -9,7 +9,7 @@ from openmm.app.simulation import Simulation
 from openmm.openmm import LangevinMiddleIntegrator
 from openmm.app import PME, HBonds, StateDataReporter, PDBReporter
 from openmm.app.pdbfile import PDBFile
-from openmm.unit import nanometer, picosecond, kelvin
+from openmm.unit import nanometer, picosecond, kelvin, Quantity
 from openmm.vec3 import Vec3
 
 
@@ -48,7 +48,10 @@ class OpenMM:
         # feed it into Modeller and add missing atoms
         # quasi centering
         positions_arr = pdb_tmp.getPositions(True)
-        positions_arr = positions_arr - np.min(positions_arr, axis=0)
+        positions_arr = positions_arr - np.mean(positions_arr, axis=0)
+        shift = np.array(self.params.boxSize)
+        shift = self._as_array(shift)
+        positions_arr += shift
         modeller = Modeller(pdb_tmp.topology, positions_arr)
         _ = modeller.addHydrogens(self.forcefield)
         modeller.addSolvent(self.forcefield, boxSize=Vec3(*self.params.boxSize)*nanometer)
@@ -91,6 +94,16 @@ class OpenMM:
         df = pd.read_csv(_file)
         os.remove(_file)
         return df
+    
+    @staticmethod
+    def _as_array(iterable, unit = nanometer):
+        '''
+        convert iterable to quantity array
+        '''
+        arr = np.array(iterable)
+        arr = Quantity(value=arr, unit=unit)
+        return arr
+        
         
     
 def find_residue_atoms(topology: Topology, chain: str, residue: str):
