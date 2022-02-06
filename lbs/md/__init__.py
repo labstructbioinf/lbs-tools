@@ -1,2 +1,2 @@
-from .openmm_wrapper import Params, OpenMM
+from .openmm_wrapper import Params, OpenMM, Patcher
 from .tools import calculate_box_size
