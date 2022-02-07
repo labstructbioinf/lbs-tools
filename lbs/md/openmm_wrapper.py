@@ -61,8 +61,7 @@ class OpenMM:
         
         positions_arr = self._asarray(pdb_tmp.positions._value)
         positions_arr = positions_arr - np.mean(positions_arr, axis=0)
-        shift = np.array(self.params.boxSize)
-        shift = self._asarray(shift)
+        shift = self._asarray(self.params.boxSize)/2
         positions_arr += shift
         modeller = Modeller(pdb_tmp.topology, positions_arr)
         if len(rm_residue) != 0:
