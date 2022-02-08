@@ -158,8 +158,20 @@ class Patcher:
         '''
         assert os.path.isfile(path_pdb)
         fixer = PDBFixer(filename=path_pdb)
-        fixer.removeHeterogens(keepWater=False)
-        fixer.addMissingHydrogens()
+        #fixer.removeHeterogens(keepWater=False)
+        #fixer.addMissingHydrogens()
+        #fixer.findNonstandardResidues()
+        #fixer.replaceNonstandardResidues()
+
+        fixer.findMissingResidues()
+        fixer.findNonstandardResidues()
+        fixer.replaceNonstandardResidues()
+        fixer.removeHeterogens(False)
+        fixer.findMissingAtoms()
+        fixer.addMissingAtoms()
+        fixer.addMissingHydrogens(7.0)
+
+
         invalid_residues = self._check_residues(fixer.topology)
         
         return fixer, invalid_residues
