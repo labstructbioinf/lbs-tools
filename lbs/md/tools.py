@@ -7,7 +7,7 @@ import atomium
 import numpy as np
 from scipy.spatial.distance import cdist
 
-re_hetatom = re.compile(r'^HETATM.+\\n')
+re_hetatom = re.compile(r"HETATM.+\n")
 
 def get_atom_xyz(residue, atom_name):
     for a in residue.atoms():
@@ -73,7 +73,7 @@ def remove_hetatom(file_in: str, file_out: str):
     assert os.path.isfile(file_in)
     with open(file_in, 'rt') as f:
         content = f.read()
-    content = re_hetatom.sub('', content)
+    content = re_hetatom.sub(r"", content)
     with open(file_out, 'wt') as f:
         f.write(content)
         

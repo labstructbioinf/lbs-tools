@@ -33,7 +33,18 @@ class Params:
     stepSize: float = 0.002 # picosecond
     numSteps: int = 10000
     saveStep: int = 1000 # how often openmm write snapshot
-    
+        
+    def __repr__(self):
+        out = f'''
+        boxSize: {self.boxSize}
+        temperature: {self.temperature}
+        frictionCoeff: {self.frictionCoeff}
+        stepSize: {self.stepSize}
+        numSteps: {self.numSteps}
+        saveStep: {self.saveStep}
+        '''
+        return out
+        
         
 class OpenMM:
     '''
