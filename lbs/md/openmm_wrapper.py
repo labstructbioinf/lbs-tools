@@ -16,6 +16,7 @@ try:
 except ImportError as e:
     pass
     
+from .tools import remove_hetatom
 
 
 class Params:
@@ -32,7 +33,6 @@ class Params:
     stepSize: float = 0.002 # picosecond
     numSteps: int = 10000
     saveStep: int = 1000 # how often openmm write snapshot
-    keepWater: bool = False
     
         
 class OpenMM:
@@ -83,12 +83,13 @@ class OpenMM:
                                                    frictionCoeff,
                                                    stepSize)
         
-    def run(self, pdb: Topology, path_output: str) -> pd.DataFrame:
+    def run(self, pdb: Topology, path_output: str, remove_hetatm: bool = True) -> pd.DataFrame:
         '''
         run simulation
         params:
             pdb (Topology)
             path_output (str)
+            remove_hetatm (bool)
         return:
             df (pd.DataFrame)
         '''
@@ -111,6 +112,9 @@ class OpenMM:
             simulation.step(self.params.numSteps)
         df = pd.read_csv(_file)
         os.remove(_file)
+        # remove water and other stuff
+        if remove_hetatm:
+            remove_hetatom(path_output, path_output)
         return df
     
     @staticmethod

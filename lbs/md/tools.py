@@ -1,3 +1,4 @@
+import re
 import os
 from functools import partial
 from typing import Union, List, Tuple
@@ -6,7 +7,7 @@ import atomium
 import numpy as np
 from scipy.spatial.distance import cdist
 
-
+re_hetatom = re.compile(r'^HETATM.{1,}')
 
 def get_atom_xyz(residue, atom_name):
     for a in residue.atoms():
@@ -60,8 +61,19 @@ def calculate_box_size(path: str, factor: int = 1.5) -> Tuple[float]:
     '''
     xyz, _ = parse_xyz(path)
     dist = cdist(xyz, xyz)
+    dist[np.isnan(dist)] = 0
     max_dist = dist.max()/10 # scale to nanometers
     box_wall = max_dist*factor
     box_wall = np.clip(box_wall, a_min=5, a_max=np.nan).astype(np.float16)
     box_size = (box_wall, box_wall, box_wall)
     return box_size
+
+
+def remove_hetatom(file_in: str, file_out: str):
+    assert os.path.isfile(file_in)
+    with open(file_in, 'rt') as f:
+        content = f.read()
+    content = re_hetatom.sub('', content)
+    with open(file_out, 'wt') as f:
+        f.write(content)
+        
