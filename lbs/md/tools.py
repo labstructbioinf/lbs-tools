@@ -7,7 +7,7 @@ import atomium
 import numpy as np
 from scipy.spatial.distance import cdist
 
-re_hetatom = re.compile(r'^HETATM.{1,}')
+re_hetatom = re.compile(r'^HETATM.+\\n')
 
 def get_atom_xyz(residue, atom_name):
     for a in residue.atoms():
