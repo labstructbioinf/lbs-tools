@@ -71,9 +71,9 @@ def calculate_box_size(path: str, factor: int = 1.5) -> Tuple[float]:
 
 def remove_hetatom(file_in: str, file_out: str):
     assert os.path.isfile(file_in)
-    with open(file_in, 'rt') as f:
+    with open(file_in, encoding='utf-8', mode='rt') as f:
         content = f.read()
     content = re_hetatom.sub(r"", content)
-    with open(file_out, 'wt') as f:
+    with open(file_out, mode='wt') as f:
         f.write(content)
         
