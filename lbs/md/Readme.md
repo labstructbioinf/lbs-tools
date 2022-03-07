@@ -21,6 +21,7 @@ from lbs.md import Params, OpenMM, calculate_box_size, Patcher
 path_pdb = ... #pdb file location
 params = Params()
 mm = OpenMM(params)
+mm.prepare_components()
 # calculate adaptive box wall size
 params.boxSize = calculate_box_size(path_pdb, factor=1.5)
 # patcher requires PDBFixer installed
