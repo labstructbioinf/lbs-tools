@@ -1,6 +1,6 @@
 import os
 from typing import NamedTuple, Tuple, Union
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile
 
 import pandas as pd
 import numpy as np
@@ -104,7 +104,11 @@ class OpenMM:
         return:
             df (pd.DataFrame)
         '''
-        _file = 'tmp.csv'
+
+        tf = NamedTemporaryFile(delete=False)
+        _file = tf.name
+        tf.close()
+        
         system = self.forcefield.createSystem(pdb.topology,
                                  nonbondedMethod=PME,
                                  nonbondedCutoff=1*nanometer,
