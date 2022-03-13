@@ -122,6 +122,7 @@ class OpenMM:
                                                           self.params.saveStep,
                                                           step=True,
                                                           potentialEnergy=True,
+                                                          totalEnergy=True,
                                                           density=True,
                                                           temperature=True))
             simulation.step(self.params.numSteps)
