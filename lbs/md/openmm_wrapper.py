@@ -1,4 +1,5 @@
 import os
+import json
 from typing import NamedTuple, Tuple, Union
 from tempfile import NamedTemporaryFile
 
@@ -31,9 +32,17 @@ class Params:
     temperature: float = 300 #kelvins
     frictionCoeff: float = 1 # 1/picosecond
     stepSize: float = 0.002 # picosecond
-    numSteps: int = 10000
+    numSteps: int = 50000
     saveStep: int = 1000 # how often openmm write snapshot
-        
+    # list of params to backup
+    simattr = [
+        'boxSize',
+        'temperature',
+        'frictionCoeff',
+        'stepSize',
+        'numSteps',
+        'saveStep'
+        ]
     def __repr__(self):
         out = f'''
         boxSize: {self.boxSize}
@@ -44,15 +53,34 @@ class Params:
         saveStep: {self.saveStep}
         '''
         return out
+
+    @property
+    def simulationTimeNano(self):
+        '''
+        simulation time in pico seconds
+        '''
+        return round(self.numSteps*self.stepSize/1000, 4)
+
+    def to_json(self):
+        '''
+        return simulation params as json
+        '''
+        paramsjson = dict()
+        for attr in self.simattr:
+            paramsjson[attr] = getattr(self, attr)
+        paramsjson["simulationTimeNano"] = self.simulationTimeNano()
+        return paramsjson
         
         
 class OpenMM:
     '''
-    OpenMM FAQ
+    main class for MD simulations via openMM package
+    OpenMM FAQ:
     https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#nan
     '''
-    def __init__(self, params: Params):
+    def __init__(self, params: Params, device: str):
         self.params = params
+        self.device = device
 
     def prepare_pdb(self, path_pdb: Union[str, PDBFile], rm_residue=[]):
         '''
@@ -97,18 +125,24 @@ class OpenMM:
     def run(self, pdb: Topology, path_output: str, remove_hetatm: bool = True) -> pd.DataFrame:
         '''
         run simulation
-        params:
+        Params:
             pdb (Topology)
-            path_output (str)
+            path_output (str): file to save output simulation
             remove_hetatm (bool)
-        return:
+        Returns:
             df (pd.DataFrame)
         '''
-
+        assert isinstance(path_output, str)
+        assert path_output.endswith('.pdb'), "simulation `path_output` must end with .pdb extension"
         tf = NamedTemporaryFile(delete=False)
         _file = tf.name
         tf.close()
-        
+        # save used params
+        paramsdict = self.params.to_json()
+        paramsfile = path_output.replace('.pdb', '_params.json')
+        with open(paramsfile, 'rt') as f:
+            json.dump(f, paramsdict)
+        # initialize sumulation environemnt
         system = self.forcefield.createSystem(pdb.topology,
                                  nonbondedMethod=PME,
                                  nonbondedCutoff=1*nanometer,
@@ -126,6 +160,7 @@ class OpenMM:
                                                           density=True,
                                                           temperature=True))
             simulation.step(self.params.numSteps)
+
         df = pd.read_csv(_file)
         os.remove(_file)
         # remove water and other stuff
@@ -141,6 +176,9 @@ class OpenMM:
         arr = np.array(iterable)
         arr = Quantity(value=arr, unit=unit)
         return arr
+
+    def _save_params(self):
+        pass
         
         
 class Patcher:

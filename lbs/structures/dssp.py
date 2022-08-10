@@ -3,7 +3,7 @@ from Bio.PDB.DSSP import _make_dssp_dict
 import pandas as pd
 
 
-def parse_dssp_output(dssp_fn, use_gzip=False):
+def parse_dssp_output(dssp_fn: str, use_gzip: bool=False):
 
 	if use_gzip:
 		f = gzip.open(dssp_fn, 'rt')
@@ -32,7 +32,7 @@ def run_dssp(pdb_path, dssp_bin='/opt/apps/dssp-3.1.4/bin/mkdssp'):
 	dssp_data = parse_dssp_output(dssp_path)
 	return dssp_data 
 
-def get_dssp_seq(fn):
+def get_dssp_seq(fn: str) -> str:
 	"""
 	Extracts sequence from DSSP output file.
 	:param fn: input filename
