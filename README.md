@@ -54,12 +54,12 @@ seq_importance = [0, 125, 130, 140, 150, 200, 0, 50, 250, 100, 100, 100, 60, 60,
 html_string = ''
 for letter, importance in zip(sequence, seq_importance):
     html_string += clr.html_colored_letter(letter, importance)
-
+# it may not be viewed correctly :)
 HTML(html_string)
 ```
-
+<body>
 <span style= "color:rgb(247, 252, 245)">L</span><span style= "color:rgb(119, 197, 120)">B</span><span style= "color:rgb(112, 194, 116)">S</span><span style= "color:rgb(96, 186, 108)"> </span><span style= "color:rgb(80, 178, 100)">i</span><span style= "color:rgb(25, 130, 62)">s</span><span style= "color:rgb(247, 252, 245)"> </span><span style= "color:rgb(211, 238, 205)">t</span><span style= "color:rgb(0, 74, 29)">h</span><span style= "color:rgb(154, 214, 149)">e</span><span style= "color:rgb(154, 214, 149)"> </span><span style= "color:rgb(154, 214, 149)">b</span><span style= "color:rgb(202, 234, 195)">e</span><span style= "color:rgb(202, 234, 195)">s</span><span style= "color:rgb(202, 234, 195)">t</span><span style= "color:rgb(202, 234, 195)">!</span>
-
+</body>
 
 
 
