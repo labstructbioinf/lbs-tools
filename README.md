@@ -42,8 +42,7 @@ df = mm.run(pdb, 'result.pdb') # run simulation store structure in 'result.pdb'
 
 #### calculate protein sequence embeddings
 Script to create embeddings from sequences via prot_t5_xl_half_uniref50 stored in dataframe
-by default `seq` column in used as embedder input. Records are stored
-as list maintaining dataframe order. 
+by default `seq` column in used as embedder input. Records are stored as list maintaining dataframe order. 
 Example use
 ```bash
 python scripts/embeddings.py -i data.csv -o data.emb

@@ -1,5 +1,6 @@
 '''generate embeddings from sequence'''
 import re
+import os
 import argparse
 import pandas as pd
 from tqdm import tqdm
@@ -35,7 +36,6 @@ parser.add_argument('-o', '-out', help='resulting list of embeddings',
 parser.add_argument('-cname', help='custom sequence column name',
                      dest='cname', type=str, default='')
 args = parser.parse_args()
-print('aaa', args)
 if args.infile.endswith('csv'):
     df = pd.read_csv(args.infile)
 elif args.infile.endswith('.p'):
@@ -43,12 +43,22 @@ elif args.infile.endswith('.p'):
 else:
     raise FileNotFoundError(f'invalid input infile extension {args.infile}')
 
+out_basedir = os.path.dirname(args.outfile)
+if out_basedir == '':
+    pass
+else:
+    if not os.path.isdir(out_basedir):
+        raise FileNotFoundError(f'output directory is invalid: {out_basedir}')
+
+
 if args.cname != '':
     if args.cname not in df.columns:
         raise KeyError(f'no column: {args.cname} available in file: {args.infile}')
     else:
         print(f'using column: {args.cname}')
         df.rename(columns={args.cname: 'seq'}, inplace=True)
+
+
 
 print('loading models')
 tokenizer = T5Tokenizer.from_pretrained(EMBEDDER, do_lower_case=False)
@@ -63,14 +73,12 @@ embedding_stack = list()
 for batch_id in tqdm(range(num_batches)):
     seqlist = []
     lenlist = []
-    for i, (idx, row) in enumerate(df.tail(num_records - batch_id*BATCH_SIZE).iterrows()):
-        if i > 0 and i % BATCH_SIZE:
-            continue
-
-        sequence = regex_aa.sub("X", str(row.seq))
-        lenlist.append(len(sequence))
-        sequence = " ".join(list(sequence))
-        seqlist.append(sequence)
+    for i, (idx, row) in enumerate(df.iterrows()):
+        if batch_id*BATCH_SIZE < i < (batch_id + 1)*BATCH_SIZE:
+            sequence = regex_aa.sub("X", str(row.seq))
+            lenlist.append(len(sequence))
+            sequence = " ".join(list(sequence))
+            seqlist.append(sequence)
         
     ids = tokenizer.batch_encode_plus(seqlist, add_special_tokens=True, padding="longest")
     input_ids = torch.tensor(ids['input_ids'])
@@ -81,6 +89,7 @@ for batch_id in tqdm(range(num_batches)):
         embeddings = embeddings[0].float().cpu()
     # remove sequence padding
     embeddings = [emb[:seq_len].T for emb, seq_len in zip(embeddings, lenlist)]
+    assert len(embeddings) == len(seqlist)
     embedding_stack.extend(embeddings)
 
-torch.save(embeddings, args.outfile)
+torch.save(embedding_stack, args.outfile)
