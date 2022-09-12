@@ -68,7 +68,7 @@ class Params:
         paramsjson = dict()
         for attr in self.simattr:
             paramsjson[attr] = getattr(self, attr)
-        paramsjson["simulationTimeNano"] = self.simulationTimeNano()
+        paramsjson["simulationTimeNano"] = self.simulationTimeNano
         return paramsjson
         
         
