@@ -141,7 +141,7 @@ class OpenMM:
         paramsdict = self.params.to_json()
         paramsfile = path_output.replace('.pdb', '_params.json')
         with open(paramsfile, 'wt') as f:
-            json.dump(f, paramsdict)
+            json.dump(paramsdict, f)
         # initialize sumulation environemnt
         system = self.forcefield.createSystem(pdb.topology,
                                  nonbondedMethod=PME,
