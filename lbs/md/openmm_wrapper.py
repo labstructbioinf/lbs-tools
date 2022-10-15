@@ -15,7 +15,7 @@ from openmm.vec3 import Vec3
 try:
     from pdbfixer import PDBFixer
 except ImportError as e:
-    pass
+    print(e)
     
 from .tools import remove_hetatom
 
@@ -68,7 +68,7 @@ class Params:
         paramsjson = dict()
         for attr in self.simattr:
             paramsjson[attr] = getattr(self, attr)
-        paramsjson["simulationTimeNano"] = self.simulationTimeNano()
+        paramsjson["simulationTimeNano"] = self.simulationTimeNano
         return paramsjson
         
         
@@ -140,8 +140,8 @@ class OpenMM:
         # save used params
         paramsdict = self.params.to_json()
         paramsfile = path_output.replace('.pdb', '_params.json')
-        with open(paramsfile, 'rt') as f:
-            json.dump(f, paramsdict)
+        with open(paramsfile, 'wt') as f:
+            json.dump(paramsdict, f)
         # initialize sumulation environemnt
         system = self.forcefield.createSystem(pdb.topology,
                                  nonbondedMethod=PME,
