@@ -61,7 +61,7 @@ class Params:
         '''
         return round(self.numSteps*self.stepSize/1000, 4)
 
-    def to_json(self):
+    def to_json(self) -> dict:
         '''
         return simulation params as json
         '''
@@ -69,10 +69,12 @@ class Params:
         for attr_name in self.simattr:
             attr = getattr(self, attr_name)
             # cast to valid json types
-            if isinstance(attr, np.floating):
+            if isinstance(attr, (np.float16, np.float32, np.float64, np.float128)):
                 attr = float(attr)
-            elif isinstance(attr, np.integer):
+            elif isinstance(attr, (np.int8, np.int16, np.int32, np.int64)):
                 attr = int(attr)
+            elif isinstance(attr, tuple):
+                attr = tuple([float(val) for val in attr])
             paramsjson[attr_name] = attr
         paramsjson["simulationTimeNano"] = int(self.simulationTimeNano)
         return paramsjson
