@@ -66,9 +66,15 @@ class Params:
         return simulation params as json
         '''
         paramsjson = dict()
-        for attr in self.simattr:
-            paramsjson[attr] = getattr(self, attr)
-        paramsjson["simulationTimeNano"] = self.simulationTimeNano
+        for attr_name in self.simattr:
+            attr = getattr(self, attr_name)
+            # cast to valid json types
+            if isinstance(attr, np.floating):
+                attr = float(attr)
+            elif isinstance(attr, np.integer):
+                attr = int(attr)
+            paramsjson[attr_name] = attr
+        paramsjson["simulationTimeNano"] = int(self.simulationTimeNano)
         return paramsjson
         
         
