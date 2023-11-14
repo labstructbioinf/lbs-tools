@@ -1,6 +1,18 @@
 import os, tempfile, subprocess
 from Bio import SeqIO
 
+# example
+
+'''
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+
+sequences = [SeqRecord(Seq(row.sseq), id=row.sseqid) for _, row in res_df.iterrows()]
+
+clust = cdhit.cdhit(sequences, cdhitbin='/opt/apps/cd-hit/cd-hit')
+clusters = clust.run(identity=0.95)
+'''
+
 
 class cdhit:
 	def __init__(self, sequences, cdhitbin="", cpus=1):
@@ -9,10 +21,10 @@ class cdhit:
 		self.sequences = sequences
 		self.cpus=cpus
 	
-	def run(self, identity=0.9):
+	def run(self, identity=0.9, coverage=0):
 		assert identity>=0.4 and identity<=1.0
-		# define word length
 		
+		# define word length
 		if identity>0.7:
 			word=5
 		elif identity>0.6:
@@ -44,8 +56,8 @@ class cdhit:
 		outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
 		outf.close()
 	
-		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
-														  identity, word)
+		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s -A %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
+														  identity, word, coverage)
 	
 		status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
