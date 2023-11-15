@@ -1,7 +1,7 @@
 import os, tempfile, subprocess
 from Bio import SeqIO
 
-# example
+# Wxample
 
 '''
 from Bio.Seq import Seq
@@ -21,7 +21,27 @@ class cdhit:
 		self.sequences = sequences
 		self.cpus=cpus
 	
-	def run(self, identity=0.9, coverage=0):
+	def run(self, identity=0.9, coverage=0.0, maxlendiff=0.0):
+	
+		'''
+		
+		Parameters:
+		
+		identity
+   			-c	sequence identity threshold, default 0.9
+ 				this is the default cd-hit's "global sequence identity" calculated as:
+ 				number of identical amino acids or bases in alignment
+		
+		coverage
+   			-A	minimal alignment coverage control for the both sequences, default 0
+ 				alignment must cover >= this value for both sequences 
+		
+		maxlendiff
+		    -s	length difference cutoff, default 0.0
+				if set to 0.9, the shorter sequences need to be
+				at least 90% length of the representative of the cluster
+		
+		'''
 		assert identity>=0.4 and identity<=1.0
 		
 		# define word length
@@ -56,8 +76,8 @@ class cdhit:
 		outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
 		outf.close()
 	
-		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s -A %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
-														  identity, word, coverage)
+		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s -A %s -s %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
+														  identity, word, coverage, maxlendiff)
 	
 		status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
