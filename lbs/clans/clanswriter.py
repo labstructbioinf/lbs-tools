@@ -130,6 +130,27 @@ numbers=%s;
 
 		f.close()
 
+
+
+
+"""
+cw = clanswriter.ClansWriter(df_links, df_desc, cf=cf)
+
+# cf should be a function that converts plmb scores into something like p-value
+
+# df_links is a pandas df with edges (id1, id2, score)
+# df_desc is a pandas df with nodes descriptions (id, full_name, name, seq, group). id is an index (the same as id1, id2 in df_links). group defines group membership for all sequences. use -1 for no groups.
+
+f = open(clans_fname, 'w')
+cw.write_sequences(f)
+cw.write_groups(f, sort_key=str, color_palette='tab20')
+f.close()
+
+# sort_key defines how group names will be sorted. 
+"""
+
+
+
 def gen_df_desc(df_links, cores, group_label="", full_name_label=""):
 	ids = list(set(df_links.id1.tolist() + df_links.id2.tolist()))
 	df_desc = pd.DataFrame(ids, columns=['id'])
