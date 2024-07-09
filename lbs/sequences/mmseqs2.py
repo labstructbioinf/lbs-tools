@@ -33,7 +33,7 @@ class MMSeqsClusterer:
 			for id, data in df.iterrows():
 				f.write('>{}\n{}\n'.format(id, data['sequence']))
 
-		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode} -v 0'
+		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode} -v 0 >/dev/null'
 																			 
 		status = os.system(cmd)
 		if status != 0:
