@@ -1,0 +1,3 @@
+[submodule "protein_analysis_tools"]
+	path = protein_analysis_tools
+	url = https://github.com/Rmadeye/protein_analysis_tools
