@@ -82,7 +82,7 @@ def silent_to_seq(silent_file):
 
 
 def parse_score_and_silent(score_file, silent_file):
-    results = pd.read_csv(score_file, delim_whitespace=True, header=0,
+    results = pd.read_csv(score_file, sep='\s+', header=0,
                                 skiprows=1, index_col=False, engine='c', dtype={"total_score": np.float64})
     id2seq = silent_to_seq(silent_file)
     sequences = []

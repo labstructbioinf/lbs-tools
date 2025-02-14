@@ -8,6 +8,9 @@ from lbs.rosetta.utils import parse_score_and_silent
 from lbs.utils.multiprocess import multiprocess, os_cmd
 import warnings
 
+
+
+
 ff_terms = ['SCORE:', 'score', 'dslf_fa13', 'exph', 'fa_atr',
             'fa_dun_dev', 'fa_dun_rot', 'fa_dun_semi', 'fa_elec',
             'fa_intra_atr_xover4', 'fa_intra_elec', 'fa_intra_rep_xover4',
@@ -16,6 +19,7 @@ ff_terms = ['SCORE:', 'score', 'dslf_fa13', 'exph', 'fa_atr',
             'lk_ball_bridge_uncpl', 'lk_ball_iso', 'omega', 'p_aa_pp',
             'pro_close', 'rama_prepro', 'ref', 'sc_filter',
             'sc_filter_int_area', 'fa_dun', 'fa_intra_rep', 'rama', 'yhh_planarity']
+
 
 
 class RosettaResults(object):
@@ -40,14 +44,14 @@ class RosettaResults(object):
     Holds the processed Rosetta results
 
     """
-    def __init__(self, scorefile, silentfile, drop_ff_terms=True):
+    def __init__(self, scorefile, silentfile, drop_ff_terms=False):
         """
 
         :param scorefile: filename of Rosetta scorefile
         :param silentfile: filename of Rosetta silentfiles
         :param drop_ff_terms: determines whether detailed Rosetta information is removed from scorefile
         """
-        self.path = os.path.dirname(__file__)
+
         self.scorefiles = []
         self.silentfiles = []
         self.results = pd.DataFrame()
@@ -60,23 +64,32 @@ class RosettaResults(object):
         else:
             raise TypeError('Silent and score filename must be both either strings or lists of strings!')
         assert len(self.scorefiles) == len(self.silentfiles)
+        
         c = 0
         for scorefile, silentfile in zip(self.scorefiles, self.silentfiles):
             if not (os.path.isfile(scorefile) and os.path.isfile(silentfile)):
                 raise FileNotFoundError()
+                
             result = parse_score_and_silent(scorefile, silentfile)
             result['source'] = os.path.splitext(scorefile)[0]
+            
+            # debug
+            #print(result)
+            
+            result.drop('SCORE:', inplace=True, axis=1)
+            
             if drop_ff_terms:
                 for term in ff_terms:
                     try:
                         result.drop(term, inplace=True, axis=1)
-                    except ValueError:
+                    except KeyError:
                         pass
             if c == 0:
                 self.results = result
             else:
                 self.results = pd.concat([self.results, result], ignore_index=True)
             c += 1
+            
         seq_lens = {len(seq) for seq in self.results['sequence'].tolist()}
         if len(seq_lens) != 1:
             warnings.warn('Sequences are of different lengths! This may results in an unexpected behavior.')

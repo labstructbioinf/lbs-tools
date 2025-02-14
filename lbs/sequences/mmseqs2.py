@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 class MMSeqsClusterer:
-	def __init__(self, mmseqs_loc='/opt/apps/MMseqs2/bin/mmseqs', tmp_dir='/tmp/'):
+	def __init__(self, mmseqs_loc='/opt/apps/MMseqs2/bin/mmseqs', tmp_dir='/tmp/', debug=False):
 		"""
 		Wrapper for clustering protein sequences (fragments) with MMSeqs2 (Steinegger et al. 2017)
 		:param mmseqs_loc: location of the MMSeqs2 binary
@@ -11,6 +11,7 @@ class MMSeqsClusterer:
 		"""
 		self.mmseqs_loc = mmseqs_loc
 		self.tmp_dir = tmp_dir
+		self.debug = debug
 	
 	def cluster(self, df, min_identity=0.25, coverage=0.5, cov_mode=0, cluster_mode=0):
 		"""
@@ -33,7 +34,12 @@ class MMSeqsClusterer:
 			for id, data in df.iterrows():
 				f.write('>{}\n{}\n'.format(id, data['sequence']))
 
-		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode} -v 0 >/dev/null'
+		if self.debug:
+			aux = "-v 1"
+		else:
+			aux = "-v 0 >/dev/null"
+
+		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode} {aux}'
 																			 
 		status = os.system(cmd)
 		if status != 0:
