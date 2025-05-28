@@ -18,19 +18,20 @@ def parse_dssp_output(dssp_fn: str, use_gzip: bool=False):
 	dssp = pd.DataFrame.from_dict(dssp, orient='index')
 	return dssp
 
-def run_dssp(pdb_path, dssp_bin='/opt/apps/dssp-3.1.4/bin/mkdssp'):
-	dssp_path = f'{pdb_path.rstrip(".pdb")}.dssp'
+def run_dssp(pdb_path, dssp_path='', dssp_bin='/opt/apps/dssp-3.1.4/bin/mkdssp'):
+    if dssp_path == '':
+        dssp_path = f'{pdb_path.rstrip(".pdb")}.dssp'
 
-	cmd = f'{dssp_bin} {pdb_path} > {dssp_path}'
-	p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = f'{dssp_bin} {pdb_path} > {dssp_path}'
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-	stdout, stderr = p.communicate()
-	stdout, stderr = stdout.decode("utf-8"), stderr.decode("utf-8")
+    stdout, stderr = p.communicate()
+    stdout, stderr = stdout.decode("utf-8"), stderr.decode("utf-8")
 
-	assert stderr=="", 	f'Failed to run {dssp_bin} for {pdb_path}:\n\n\n{stderr}'	
+    assert stderr == "", f'Failed to run {dssp_bin} for {pdb_path}:\n\n\n{stderr}'
 
-	dssp_data = parse_dssp_output(dssp_path)
-	return dssp_data 
+    dssp_data = parse_dssp_output(dssp_path)
+    return dssp_data
 
 # def run_dssp(pdb_path, dssp_bin='/opt/apps/dssp-3.1.4/bin/mkdssp'):
 #     # Create a temporary file to store the uncompressed PDB content

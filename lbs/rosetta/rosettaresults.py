@@ -8,9 +8,6 @@ from lbs.rosetta.utils import parse_score_and_silent
 from lbs.utils.multiprocess import multiprocess, os_cmd
 import warnings
 
-
-
-
 ff_terms = ['SCORE:', 'score', 'dslf_fa13', 'exph', 'fa_atr',
             'fa_dun_dev', 'fa_dun_rot', 'fa_dun_semi', 'fa_elec',
             'fa_intra_atr_xover4', 'fa_intra_elec', 'fa_intra_rep_xover4',
@@ -90,12 +87,12 @@ class RosettaResults(object):
                 self.results = pd.concat([self.results, result], ignore_index=True)
             c += 1
             
-        seq_lens = {len(seq) for seq in self.results['sequence'].tolist()}
-        if len(seq_lens) != 1:
-            warnings.warn('Sequences are of different lengths! This may results in an unexpected behavior.')
-        model_ids = {model_id for model_id in self.results['description'].tolist()}
-        if len(model_ids) != len(self.results['description'].tolist()):
-            warnings.warn('Model identificators are not unique. This may results in an unexpected behavior')
+        # seq_lens = {len(seq) for seq in self.results['sequence'].tolist()}
+#         if len(seq_lens) != 1:
+#             warnings.warn('Sequences are of different lengths! This may results in an unexpected behavior.')
+#         model_ids = {model_id for model_id in self.results['description'].tolist()}
+#         if len(model_ids) != len(self.results['description'].tolist()):
+#             warnings.warn('Model identificators are not unique. This may results in an unexpected behavior')
 
     def __repr__(self):
         return("Rosetta results: storing %s models with sequences." % (self.results.shape[0]))
