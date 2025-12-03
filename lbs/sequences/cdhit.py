@@ -1,112 +1,107 @@
-import os, tempfile, subprocess
+import os
+import tempfile
+import subprocess
 from Bio import SeqIO
 
-# Wxample
-
-'''
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-
-sequences = [SeqRecord(Seq(row.sseq), id=row.sseqid) for _, row in res_df.iterrows()]
-
-clust = cdhit.cdhit(sequences, cdhitbin='/opt/apps/cd-hit/cd-hit')
-clusters = clust.run(identity=0.95)
-'''
-
-
 class cdhit:
-	def __init__(self, sequences, cdhitbin="", cpus=1):
-		assert os.path.isfile(cdhitbin), 'please provide full path to the cd-hit binary'
-		self.cdhitbin = cdhitbin
-		self.sequences = sequences
-		self.cpus=cpus
-	
-	def run(self, identity=0.9, coverage=0.0, maxlendiff=0.0):
-	
-		'''
-		
-		Parameters:
-		
-		identity
-   			-c	sequence identity threshold, default 0.9
- 				this is the default cd-hit's "global sequence identity" calculated as:
- 				number of identical amino acids or bases in alignment
-		
-		coverage
-   			-A	minimal alignment coverage control for the both sequences, default 0
- 				alignment must cover >= this value for both sequences 
-		
-		maxlendiff
-		    -s	length difference cutoff, default 0.0
-				if set to 0.9, the shorter sequences need to be
-				at least 90% length of the representative of the cluster
-		
-		'''
-		assert identity>=0.4 and identity<=1.0
-		
-		# define word length
-		if identity>0.7:
-			word=5
-		elif identity>0.6:
-			word=4
-		elif identity>0.5:
-			word=3
-		else:
-			word=2
-		
-		print ('Word lendth set to', word)	
+    def __init__(self, sequences, cdhitbin="", cpus=1, debug=False):
+        if not os.path.isfile(cdhitbin):
+            raise ValueError(f"CD-HIT binary not found: {cdhitbin}")
+        self.cdhitbin = cdhitbin
+        self.sequences = sequences
+        self.cpus = cpus
+        self.debug = debug
 
-		temp_idents = []
+    def run(self, identity=0.9, coverage=0.0, maxlendiff=0.0):
+        if not (0.4 <= identity <= 1.0):
+            raise ValueError("identity must be between 0.4 and 1.0")
 
-		# prepare input fasta file
-		inf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
-		maxdesclen = 0
-		for s in self.sequences:
-			ident = s.id
-			assert ident.find('...')==-1 and ident.find('>')==-1, 'invalid sequence name'
-			assert ident not in temp_idents, 'duplicate seq ids'
-			temp_idents.append(ident)
-			maxdesclen = max([maxdesclen, len(ident)])
-			inf.write(s.format('fasta'))
-		inf.close()
-		
-		print ('Maximal description length', maxdesclen)
-	
-		# prepare empty output file
-		outf = tempfile.NamedTemporaryFile(dir='/tmp/', mode='wt', delete=False)
-		outf.close()
-	
-		cmd = "%s -i %s -o %s -d %s -T %s -c %s -n %s -A %s -s %s" % (self.cdhitbin, inf.name, outf.name, maxdesclen+1, self.cpus,
-														  identity, word, coverage, maxlendiff)
-	
-		status = subprocess.call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		
-		assert status==0, 'non-clean exit from cdhit. check in %s and out %s files' % (inf.name, outf.name)
-		
-		os.remove(inf.name)
-		
-		# parse fasta results
-		self.results_fasta = list(SeqIO.parse(outf.name, 'fasta'))
-		os.remove(outf.name)
-		
-		# parse cluster assignments
-		results_clusters={}
-		for l in open(outf.name + '.clstr'):
-			if l[0]=='>':
-				cluster = int(l[8:-1])
-			else:
-				ident = l[l.find('>')+1:l.find('...')]
-				if not cluster in results_clusters:
-					results_clusters[cluster]=[ident]
-				else:
-					results_clusters[cluster].append(ident)
-				
-		os.remove(outf.name + '.clstr')	
-		
-		return results_clusters		
+        # determine word size and minimal length required
+        if identity > 0.7:
+            word = 5
+            min_len = 11
+        elif identity > 0.6:
+            word = 4
+            min_len = 9
+        elif identity > 0.5:
+            word = 3
+            min_len = 7
+        else:
+            word = 2
+            min_len = 5
 
-	
-		
-		
-	
-	
+        shortest_seq_len = min(len(s.seq) for s in self.sequences)
+        if shortest_seq_len < min_len:
+            raise ValueError(
+                f"Cannot cluster: identity={identity} requires sequences ≥{min_len} aa, "
+                f"but the shortest is {shortest_seq_len} aa. Try lowering identity or filtering short sequences."
+            )
+
+        if shortest_seq_len < 11:
+            print(
+                f"[CD-HIT NOTICE] Using short sequences (shortest={shortest_seq_len}). "
+                f"Word length set to {word}, enforcing min seq len ≥ {min_len}"
+            )
+
+        seen_ids = set()
+
+        with tempfile.NamedTemporaryFile(mode='wt', delete=False, suffix=".fasta") as inf:
+            for s in self.sequences:
+                ident = s.id
+                if '...' in ident or '>' in ident:
+                    raise ValueError(f"Invalid sequence ID: {ident}")
+                if ident in seen_ids:
+                    raise ValueError(f"Duplicate sequence ID: {ident}")
+                seen_ids.add(ident)
+                inf.write(s.format('fasta'))
+            input_path = inf.name
+
+        maxdesclen = max(len(s.id) for s in self.sequences)
+        output_path = tempfile.mktemp(suffix=".fasta")
+        clstr_file = output_path + ".clstr"
+
+        if self.debug:
+            print(f"[CD-HIT DEBUG] input: {input_path}")
+            print(f"[CD-HIT DEBUG] output: {output_path}")
+            print(f"[CD-HIT DEBUG] cluster file: {clstr_file}")
+
+        cmd = [
+            self.cdhitbin,
+            "-i", input_path,
+            "-o", output_path,
+            "-d", str(maxdesclen + 1),
+            "-T", str(self.cpus),
+            "-c", str(identity),
+            "-n", str(word),
+            "-A", str(coverage),
+            "-s", str(maxlendiff),
+            "-l", str(min_len)
+        ]
+
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            raise RuntimeError(f"CD-HIT failed. Check input: {input_path} and output: {output_path}")
+
+        # parse clustering result
+        clusters = {}
+        current_cluster = None
+        with open(clstr_file) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith(">Cluster"):
+                    current_cluster = int(line.split()[-1])
+                    clusters[current_cluster] = []
+                elif line:
+                    start = line.find('>') + 1
+                    end = line.find('...')
+                    seq_id = line[start:end]
+                    clusters[current_cluster].append(seq_id)
+
+        # cleanup (only if not in debug mode)
+        if not self.debug:
+            os.remove(input_path)
+            os.remove(output_path)
+            os.remove(clstr_file)
+
+        return clusters

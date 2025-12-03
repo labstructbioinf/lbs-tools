@@ -1,61 +1,102 @@
-import tempfile
 import os
+import tempfile
+import subprocess
 import pandas as pd
+from pathlib import Path
+import shutil
+
 
 class MMSeqsClusterer:
-	def __init__(self, mmseqs_loc='/opt/apps/MMseqs2/bin/mmseqs', tmp_dir='/tmp/', debug=False):
-		"""
-		Wrapper for clustering protein sequences (fragments) with MMSeqs2 (Steinegger et al. 2017)
-		:param mmseqs_loc: location of the MMSeqs2 binary
-		:param tmp_dir: location of the temporary directory for intermediate files
-		"""
+	def __init__(self, mmseqs_loc='/opt/apps/MMseqs2/bin/mmseqs', tmp_dir='/tmp', debug=False, cpus=1):
 		self.mmseqs_loc = mmseqs_loc
 		self.tmp_dir = tmp_dir
 		self.debug = debug
-	
-	def cluster(self, df, min_identity=0.25, coverage=0.5, cov_mode=0, cluster_mode=0):
-		"""
-		Cluster sequences in the pandas DataFrame ('sequence' column) with MMSeqs2
-		Manual at https://github.com/soedinglab/mmseqs2/wiki
-		
-		:param df: DataFrame storing protein sequences ('sequence' column)
-		:param min_identity: minimum identity [0, 1]
-		:param coverage: minimum alignment coverage [0, 1]
-		:param cov_mode: coverage mode [0-3] (0 coverage mode should be used to cluster full length protein sequences)
-		:param cluster_mode: cluster mode [0-2]
-		:return: updated DataFrame containing 'clust_id' column denoting the cluster each sequence was assigned to
-				 (note that the cluster name denotes its representative sequence's id)
-		"""
+		self.cpus = cpus
 
-		fas_fn = self.tmp_dir + next(tempfile._get_candidate_names())
-		out_prefix = self.tmp_dir + next(tempfile._get_candidate_names())
-	
+	def cluster(self, df, min_identity=0.25, coverage=0.9, cov_mode=0, cluster_mode=0,
+				sensitivity=None, kmer_per_seq=None, max_seqs=None, short_seq_threshold=15):
+		"""
+		Cluster sequences in a DataFrame using MMSeqs2, with automatic support for short sequences.
+		"""
+		assert 'sequence' in df.columns, "Input DataFrame must contain a 'sequence' column"
+
+		shortest = df['sequence'].map(len).min()
+		is_short_mode = shortest < short_seq_threshold
+
+		if is_short_mode and self.debug:
+			print(f"[MMSEQS] Shortest sequence has {shortest} aa. Switching to short-sequence mode.")
+
+		sensitivity = sensitivity if sensitivity is not None else (6.0 if is_short_mode else 4.0)
+		if is_short_mode:
+			kmer_per_seq = kmer_per_seq if kmer_per_seq is not None else 21
+			max_seqs = max_seqs if max_seqs is not None else 50
+
+		tmp_root = tempfile.mkdtemp(dir=self.tmp_dir)
+		fas_fn = os.path.join(tmp_root, "input.fasta")
+		out_prefix = os.path.join(tmp_root, "out")
+
 		with open(fas_fn, 'w') as f:
-			for id, data in df.iterrows():
-				f.write('>{}\n{}\n'.format(id, data['sequence']))
+			for idx, row in df.iterrows():
+				f.write(f">{idx}\n{row['sequence']}\n")
+
+		cmd = [
+			self.mmseqs_loc, "easy-cluster", fas_fn, out_prefix, os.path.join(tmp_root, "tmp"),
+			"--min-seq-id", str(min_identity),
+			"-c", str(coverage),
+			"--cov-mode", str(cov_mode),
+			"--cluster-mode", str(cluster_mode),
+			"-s", str(sensitivity),
+			"--threads", str(self.cpus),
+			"-v", "1"
+		]
+
+		if kmer_per_seq is not None:
+			cmd.extend(["--kmer-per-seq", str(kmer_per_seq)])
+		if max_seqs is not None:
+			cmd.extend(["--max-seqs", str(max_seqs)])
 
 		if self.debug:
-			aux = "-v 1"
-		else:
-			aux = "-v 0 >/dev/null"
+			print(f"[MMSEQS DEBUG] Running command: {' '.join(cmd)}")
+			print(f"[MMSEQS DEBUG] Temp dir: {tmp_root}")
 
-		cmd = f'{self.mmseqs_loc} easy-cluster {fas_fn} {out_prefix} tmp --min-seq-id {min_identity} -c {coverage} --cov-mode {cov_mode} --cluster-mode {cluster_mode} {aux}'
-																			 
-		status = os.system(cmd)
-		if status != 0:
-			raise RuntimeError('MMSeqs2 clustering failed! Check input parameters.')
-			
-		# Parse MMSeqs2 output
-		tmp_df = pd.read_csv('{}_cluster.tsv'.format(out_prefix), header=None, sep='\t')
-		tmp_df.columns = ['clust_rep', 'clust_entities']
-		clust_data = tmp_df.groupby(by='clust_rep').agg({'clust_entities': list}).to_dict(orient='index')
-	
-		# Remove temporary files
-		os.system('rm {}'.format(fas_fn))
-		os.system('rm {}*'.format(out_prefix))
-		
-		cluster_indexes = {entry: representative for representative, entries in clust_data.items() for entry in
-						   entries['clust_entities']}
+		try:
+			subprocess.run(
+				cmd,
+				check=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True
+			)
+		except subprocess.CalledProcessError as e:
+			print("MMSeqs2 clustering failed.")
+			print("Command:", ' '.join(cmd))
+			print("Return code:", e.returncode)
+			print("STDOUT:")
+			print(e.stdout)
+			print("STDERR:")
+			print(e.stderr)
+			raise RuntimeError("MMSeqs2 clustering failed. See output above for details.")
+
+		cluster_tsv = f"{out_prefix}_cluster.tsv"
+		if not os.path.exists(cluster_tsv):
+			raise RuntimeError(f"Expected output file not found: {cluster_tsv}")
+
+		tmp_df = pd.read_csv(cluster_tsv, sep='\t', header=None, names=["clust_rep", "clust_entity"])
+		tmp_df["clust_rep"] = tmp_df["clust_rep"].astype(str)
+		tmp_df["clust_entity"] = tmp_df["clust_entity"].astype(str)
+		cluster_map = tmp_df.set_index("clust_entity")["clust_rep"].to_dict()
+
 		df = df.copy()
-		df['clust_id'] = df.index.map(lambda x: cluster_indexes[x])
+		df['clust_id'] = df.index.map(lambda x: cluster_map.get(str(x), None))
+
+		if self.debug:
+			print(f"[MMSEQS DEBUG] Clustering complete. Found {len(tmp_df['clust_rep'].unique())} clusters.")
+			print(f"[MMSEQS DEBUG] Temp files retained at: {tmp_root}")
+		else:
+			# solidne sprzątanie całego katalogu tymczasowego, łącznie z podkatalogami
+			try:
+				shutil.rmtree(tmp_root)
+			except Exception:
+				pass
+
 		return df
